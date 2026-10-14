@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f7f8fa">
+  <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
+  <title>启页 · 你的上网起点</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%232b604d'/%3E%3Cpath d='M12 28V12h16M12 28l16-16M20 28h8v-8' stroke='white' fill='none' stroke-width='2.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14a8.5 8.5 0 0 1-10.5-10.5A8.5 8.5 0 1 0 20.5 14Z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 4 5 5M4 20l5-1L20 8a2 2 0 0 0-5-5L4 14Z"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M8 16 19 5M10 5h9v9M5 9v10h10"/></symbol>
+  </defs></svg>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="启页首页"><span class="brand-mark"><svg><use href="#i-out"/></svg></span><span>启页<span class="brand-dot">.</span></span></a>
+      <div class="top-actions"><span class="local-label">你的上网起点</span><button id="theme-toggle" class="icon-button" type="button" aria-label="切换到深色模式" title="切换到深色模式"><svg><use href="#i-moon"/></svg></button></div>
+    </header>
+    <main>
+      <section class="search-section" aria-labelledby="greeting">
+        <div class="date-line"><span id="date"></span><span class="separator">/</span><time id="clock"></time></div>
+        <h1 id="greeting">今天，从这里开始<span>。</span></h1>
+        <p class="intro">搜你所想，去你想去。</p>
+        <form id="search-form" role="search">
+          <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" name="q" placeholder="搜索内容，或输入网址直达" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button></div>
+          <fieldset class="engines"><legend class="sr-only">选择搜索引擎</legend><span class="engine-label" aria-hidden="true">搜索引擎</span>
+            <label class="engine"><input type="radio" name="engine" value="baidu" checked><span>百度</span></label>
+            <label class="engine"><input type="radio" name="engine" value="bing"><span>必应</span></label>
+            <label class="engine"><input type="radio" name="engine" value="google"><span>Google</span></label>
+            <label class="engine"><input type="radio" name="engine" value="duckduckgo"><span>DuckDuckGo</span></label>
+          </fieldset>
+          <p id="search-error" class="error" role="alert" hidden></p>
+        </form>
+      </section>
+      <section class="shortcuts-section" aria-labelledby="shortcuts-heading">
+        <div class="section-heading"><h2 id="shortcuts-heading">常用网站 <span id="shortcut-count"></span></h2><button id="edit-toggle" class="text-button" type="button" aria-pressed="false"><svg><use href="#i-edit"/></svg><span>编辑</span></button></div>
+        <div id="shortcuts" class="shortcuts"></div>
+        <p id="empty-state" class="empty-state" hidden>还没有快捷入口，添加一个常去的网站吧。</p>
+        <details id="add-panel"><summary><svg><use href="#i-plus"/></svg>添加网站</summary><form id="add-form"><div class="add-fields"><label>网站名称<input id="site-name" maxlength="24" placeholder="例如：我的博客" required></label><label>网站地址<input id="site-url" type="text" inputmode="url" placeholder="例如：example.com" required></label><button type="submit" class="primary-button">添加</button></div><p id="add-error" class="error" role="alert" hidden></p></form></details>
+      </section>
+      <p class="keyboard-tip"><kbd>/</kbd> 快速搜索<span>·</span><kbd>Enter</kbd> 出发</p>
+    </main>
+    <footer><span>少一点纷扰，多一点专注。</span><span class="footer-storage">偏好保存在此浏览器</span></footer>
+  </div>
+  <div id="notice" class="notice" role="status" hidden></div>
+</body>
+</html>
