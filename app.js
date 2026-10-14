@@ -15,6 +15,12 @@ const DEFAULT_SITES = [
   { name: 'ChatGPT', url: 'https://chatgpt.com', badge: 'C' },
   { name: 'DeepSeek', url: 'https://chat.deepseek.com', badge: 'D' }
 ];
+const SITE_ICONS = Object.freeze({
+  'github.com': 'github.ico', 'bilibili.com': 'bilibili.ico',
+  'zhihu.com': 'zhihu.ico', 'xiaohongshu.com': 'xiaohongshu.ico',
+  'music.163.com': 'netease.ico', 'douban.com': 'douban.ico',
+  'chatgpt.com': 'chatgpt.ico', 'chat.deepseek.com': 'deepseek.svg'
+});
 const $ = (selector) => document.querySelector(selector);
 function read(key, fallback) {
   try { const v = localStorage.getItem('yql.' + key); return v === null ? fallback : JSON.parse(v); }
@@ -54,8 +60,18 @@ let selectedEngine = read('engine', 'baidu');
 if (!Object.hasOwn(ENGINES, selectedEngine)) selectedEngine = 'baidu';
 document.querySelectorAll('[name=engine]').forEach(input => {
   input.checked = input.value === selectedEngine;
-  input.addEventListener('change', () => { selectedEngine = input.value; save('engine', selectedEngine); updateSearchHint(); });
+  input.addEventListener('change', () => { selectedEngine = input.value; save('engine', selectedEngine); updateSearchHint(); moveEngineIndicator(); });
 });
+function moveEngineIndicator() {
+  const label = $('[name=engine]:checked').parentElement;
+  const indicator = $('.engine-indicator');
+  indicator.style.width = label.offsetWidth + 'px';
+  indicator.style.height = label.offsetHeight + 'px';
+  indicator.style.transform = `translate(${label.offsetLeft}px, ${label.offsetTop}px)`;
+  $('.engines').classList.add('has-indicator');
+}
+new ResizeObserver(moveEngineIndicator).observe($('.engines'));
+document.fonts.ready.then(moveEngineIndicator);
 let theme = read('theme', 'light') === 'dark' ? 'dark' : 'light';
 function applyTheme() {
   document.documentElement.dataset.theme = theme;
@@ -95,7 +111,15 @@ function renderSites() {
   sites.forEach((site, index) => {
     const wrap = document.createElement('div'); wrap.className = 'shortcut';
     const link = document.createElement('a'); link.className = 'shortcut-link'; link.href = websiteUrl(site.url).href;
-    const badge = document.createElement('span'); badge.className = 'site-badge'; badge.textContent = typeof site.badge === 'string' ? site.badge.slice(0,2) : Array.from(site.name.trim())[0] || '站'; badge.setAttribute('aria-hidden', 'true');
+    const badge = document.createElement('span'); badge.className = 'site-badge'; badge.setAttribute('aria-hidden', 'true');
+    const fallback = document.createElement('span'); fallback.textContent = typeof site.badge === 'string' ? site.badge.slice(0,2) : Array.from(site.name.trim())[0] || '站';
+    const icon = document.createElement('img'); icon.className = 'site-favicon'; icon.alt = ''; icon.width = 26; icon.height = 26; icon.referrerPolicy = 'no-referrer';
+    icon.addEventListener('load', () => { fallback.hidden = true; icon.classList.add('loaded'); });
+    icon.addEventListener('error', () => { icon.remove(); });
+    const target = new URL(link.href);
+    const bundled = SITE_ICONS[target.hostname.replace(/^www\./, '')];
+    icon.src = bundled ? './icons/' + bundled : new URL('/favicon.ico', target.origin).href;
+    badge.append(fallback, icon);
     const copy = document.createElement('span'); copy.className = 'site-copy';
     const name = document.createElement('span'); name.className = 'site-name'; name.textContent = site.name; name.title = site.name;
     const domain = document.createElement('span'); domain.className = 'site-domain'; domain.textContent = new URL(link.href).hostname.replace(/^www\./, '');
