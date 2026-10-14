@@ -32,8 +32,8 @@ function notify(message) {
   clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { $('#notice').hidden = true; }, 4000);
 }
 function save(key, value) {
-  try { localStorage.setItem('yql.' + key, JSON.stringify(value)); }
-  catch { notify('浏览器暂时无法保存设置，本次会话仍可使用。'); }
+  try { localStorage.setItem('yql.' + key, JSON.stringify(value)); $('#settings-status').textContent = '已自动保存'; }
+  catch { $('#settings-status').textContent = '当前会话有效，无法保存'; notify('浏览器暂时无法保存设置，本次会话仍可使用。'); }
 }
 function websiteUrl(value) {
   const text = value.trim();
@@ -60,8 +60,14 @@ let selectedEngine = read('engine', 'baidu');
 if (!Object.hasOwn(ENGINES, selectedEngine)) selectedEngine = 'baidu';
 document.querySelectorAll('[name=engine]').forEach(input => {
   input.checked = input.value === selectedEngine;
-  input.addEventListener('change', () => { selectedEngine = input.value; save('engine', selectedEngine); updateSearchHint(); moveEngineIndicator(); });
+  input.addEventListener('change', () => setEngine(input.value));
 });
+function setEngine(value) {
+  selectedEngine = value;
+  document.querySelectorAll('[name=engine]').forEach(input => { input.checked = input.value === value; });
+  $('#setting-engine').value = value;
+  save('engine', value); updateSearchHint(); moveEngineIndicator();
+}
 function moveEngineIndicator() {
   const label = $('[name=engine]:checked').parentElement;
   const indicator = $('.engine-indicator');
@@ -72,7 +78,10 @@ function moveEngineIndicator() {
 }
 new ResizeObserver(moveEngineIndicator).observe($('.engines'));
 document.fonts.ready.then(moveEngineIndicator);
-let theme = read('theme', 'light') === 'dark' ? 'dark' : 'light';
+const systemTheme = matchMedia('(prefers-color-scheme: dark)');
+let themePreference = read('theme', 'light');
+if (!['light','dark','system'].includes(themePreference)) themePreference = 'light';
+let theme = themePreference === 'system' ? (systemTheme.matches ? 'dark' : 'light') : themePreference;
 function applyTheme() {
   document.documentElement.dataset.theme = theme;
   const label = theme === 'light' ? '切换到深色模式' : '切换到浅色模式';
@@ -81,7 +90,16 @@ function applyTheme() {
   $('meta[name=theme-color]').content = theme === 'light' ? '#f7f8fa' : '#161c1b';
 }
 applyTheme();
-$('#theme-toggle').addEventListener('click', () => { theme = theme === 'light' ? 'dark' : 'light'; applyTheme(); save('theme', theme); });
+function setThemePreference(value) {
+  themePreference = value;
+  theme = value === 'system' ? (systemTheme.matches ? 'dark' : 'light') : value;
+  $('#setting-theme').value = value; applyTheme(); save('theme', value);
+}
+systemTheme.addEventListener('change', () => { if (themePreference === 'system') { theme = systemTheme.matches ? 'dark' : 'light'; applyTheme(); } });
+$('#theme-toggle').addEventListener('click', () => setThemePreference(theme === 'light' ? 'dark' : 'light'));
+let newTab = read('newTab', false) === true;
+let motionEnabled = read('motion', true) !== false;
+document.documentElement.dataset.motion = motionEnabled ? 'on' : 'off';
 function updateSearchHint() {
   let direct = false;
   try { direct = !!destination($('#query').value, selectedEngine)?.direct; } catch {}
@@ -93,24 +111,24 @@ $('#query').addEventListener('input', updateSearchHint);
 updateSearchHint();
 $('#search-form').addEventListener('submit', event => {
   event.preventDefault();
-  try { const target = destination($('#query').value, selectedEngine); if (target) window.location.assign(target.url); }
+  try { const target = destination($('#query').value, selectedEngine); if (target) { if (newTab) window.open(target.url, '_blank', 'noopener,noreferrer'); else window.location.assign(target.url); } }
   catch (error) { $('#search-error').textContent = error.message; $('#search-error').hidden = false; }
 });
 document.addEventListener('keydown', event => {
-  if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) { event.preventDefault(); $('#query').focus(); }
+  if (event.key === '/' && !$('#settings-dialog').open && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) { event.preventDefault(); $('#query').focus(); }
   if (event.key === 'Escape' && document.activeElement === $('#query')) $('#query').blur();
 });
 let sites = read('sites', DEFAULT_SITES);
 if (!Array.isArray(sites)) sites = DEFAULT_SITES;
 sites = sites.filter(site => site && typeof site.name === 'string' && typeof site.url === 'string' && websiteUrl(site.url));
-let editing = false;
 function renderSites() {
-  $('#shortcuts').replaceChildren(); $('#shortcuts').classList.toggle('editing', editing);
+  $('#shortcuts').replaceChildren();
   $('#shortcut-count').textContent = sites.length;
   $('#empty-state').hidden = sites.length > 0;
   sites.forEach((site, index) => {
     const wrap = document.createElement('div'); wrap.className = 'shortcut';
     const link = document.createElement('a'); link.className = 'shortcut-link'; link.href = websiteUrl(site.url).href;
+    if (newTab) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
     const badge = document.createElement('span'); badge.className = 'site-badge'; badge.setAttribute('aria-hidden', 'true');
     const fallback = document.createElement('span'); fallback.textContent = typeof site.badge === 'string' ? site.badge.slice(0,2) : Array.from(site.name.trim())[0] || '站';
     const icon = document.createElement('img'); icon.className = 'site-favicon'; icon.alt = ''; icon.width = 26; icon.height = 26; icon.referrerPolicy = 'no-referrer';
@@ -124,25 +142,78 @@ function renderSites() {
     const name = document.createElement('span'); name.className = 'site-name'; name.textContent = site.name; name.title = site.name;
     const domain = document.createElement('span'); domain.className = 'site-domain'; domain.textContent = new URL(link.href).hostname.replace(/^www\./, '');
     copy.append(name, domain); link.append(badge, copy); wrap.append(link);
-    if (editing) {
-      const remove = document.createElement('button'); remove.className = 'remove-site'; remove.type = 'button'; remove.setAttribute('aria-label', '删除' + site.name);
-      remove.innerHTML = '<svg aria-hidden="true"><use href="#i-close"/></svg>';
-      remove.addEventListener('click', () => {
-        sites.splice(index, 1); save('sites', sites); renderSites(); notify('已移除' + site.name);
-        const buttons = document.querySelectorAll('.remove-site'); (buttons[Math.min(index,buttons.length-1)] || $('#edit-toggle')).focus();
-      }); wrap.append(remove);
-    }
     $('#shortcuts').append(wrap);
   });
 }
 renderSites();
-$('#edit-toggle').addEventListener('click', () => { editing = !editing; $('#edit-toggle').setAttribute('aria-pressed', String(editing)); $('#edit-toggle span').textContent = editing ? '完成' : '编辑'; renderSites(); });
+let editingSite = null;
+function resetSiteForm() {
+  editingSite = null; $('#add-form').reset(); $('#add-error').hidden = true;
+  $('#form-title').textContent = '添加网站'; $('#add-form [type=submit]').textContent = '添加网站'; $('#cancel-edit').hidden = true;
+}
+function persistSites() { save('sites', sites); renderSites(); renderSiteManager(); }
+function renderSiteManager() {
+  $('#site-manager').replaceChildren(); $('#manage-count').textContent = sites.length + ' 个'; $('#manager-empty').hidden = sites.length > 0;
+  sites.forEach((site, index) => {
+    const row = document.createElement('div'); row.className = 'manager-row';
+    const copy = document.createElement('div'); copy.className = 'manager-copy';
+    const name = document.createElement('strong'); name.textContent = site.name;
+    const domain = document.createElement('small'); domain.textContent = websiteUrl(site.url).hostname;
+    copy.append(name, domain); row.append(copy);
+    const actions = document.createElement('div'); actions.className = 'manager-actions';
+    const specs = [
+      ['edit', '编辑', 'i-edit', false], ['up', '上移', 'i-up', index === 0],
+      ['down', '下移', 'i-down', index === sites.length - 1], ['remove', '删除', 'i-close', false]
+    ];
+    specs.forEach(([action, text, icon, disabled]) => {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'manager-action'; button.dataset.action = action;
+      button.disabled = disabled; button.title = text + site.name; button.setAttribute('aria-label', text + site.name);
+      button.innerHTML = `<svg aria-hidden="true"><use href="#${icon}"/></svg>`;
+      button.addEventListener('click', () => {
+        if (action === 'edit') {
+          editingSite = index; $('#site-name').value = site.name; $('#site-url').value = site.url;
+          $('#form-title').textContent = '编辑网站'; $('#add-form [type=submit]').textContent = '保存修改'; $('#cancel-edit').hidden = false;
+          $('#add-error').hidden = true; $('#add-panel').open = true; $('#site-name').focus(); return;
+        }
+        resetSiteForm();
+        if (action === 'remove') { sites.splice(index, 1); notify('已移除' + site.name); }
+        else { const other = index + (action === 'up' ? -1 : 1); [sites[index], sites[other]] = [sites[other], sites[index]]; }
+        persistSites();
+        const focusIndex = action === 'remove' ? Math.min(index, sites.length - 1) : index + (action === 'up' ? -1 : 1);
+        const focusRow = $('#site-manager').children[focusIndex];
+        const nextButton = focusRow?.querySelector(`[data-action=${action}]:not(:disabled)`) || focusRow?.querySelector('button:not(:disabled)');
+        (nextButton || $('#add-panel summary')).focus();
+      }); actions.append(button);
+    }); row.append(actions); $('#site-manager').append(row);
+  });
+}
+function openSettings(section) {
+  $('#setting-theme').value = themePreference; $('#setting-engine').value = selectedEngine;
+  $('#setting-newtab').checked = newTab; $('#setting-motion').checked = motionEnabled; renderSiteManager();
+  $('#settings-dialog').showModal(); document.body.classList.add('settings-visible');
+  if (section === 'add') { resetSiteForm(); $('#add-panel').open = true; $('#site-name').focus(); }
+  if (section === 'sites') $('#manage-sites').scrollIntoView({block:'start'});
+}
+$('#settings-open').addEventListener('click', () => openSettings());
+$('#add-shortcut').addEventListener('click', () => openSettings('add'));
+$('#edit-toggle').addEventListener('click', () => openSettings('sites'));
+$('#settings-close').addEventListener('click', () => $('#settings-dialog').close());
+$('#settings-done').addEventListener('click', () => $('#settings-dialog').close());
+$('#settings-dialog').addEventListener('close', () => { document.body.classList.remove('settings-visible'); });
+$('#settings-dialog').addEventListener('click', event => { if (event.target === $('#settings-dialog')) { const r = event.target.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) event.target.close(); } });
+$('#setting-theme').addEventListener('change', event => setThemePreference(event.target.value));
+$('#setting-engine').addEventListener('change', event => setEngine(event.target.value));
+$('#setting-newtab').addEventListener('change', event => { newTab = event.target.checked; save('newTab', newTab); renderSites(); });
+$('#setting-motion').addEventListener('change', event => { motionEnabled = event.target.checked; document.documentElement.dataset.motion = motionEnabled ? 'on' : 'off'; save('motion', motionEnabled); });
+$('#cancel-edit').addEventListener('click', resetSiteForm);
 $('#add-form').addEventListener('submit', event => {
   event.preventDefault(); const name = $('#site-name').value.trim(); const url = websiteUrl($('#site-url').value);
-  let error = !name ? '请输入网站名称。' : !url ? '请输入有效的网址，例如 example.com；仅支持 http 或 https。' : sites.some(site => websiteUrl(site.url).href === url.href) ? '这个网址已经在快捷入口中了。' : '';
+  let error = !name ? '请输入网站名称。' : !url ? '请输入有效的网址，例如 example.com；仅支持 http 或 https。' : sites.some((site, index) => index !== editingSite && websiteUrl(site.url).href === url.href) ? '这个网址已经在快捷入口中了。' : '';
   $('#add-error').hidden = !error; $('#add-error').textContent = error;
   if (error) return;
-  sites.push({ name, url: url.href }); save('sites', sites); renderSites(); $('#add-form').reset(); $('#add-panel').open = false; $('#add-panel summary').focus(); notify('已添加' + name);
+  const wasEditing = editingSite !== null;
+  if (wasEditing) sites[editingSite] = { name, url: url.href }; else sites.push({ name, url: url.href });
+  persistSites(); resetSiteForm(); $('#add-panel').open = false; $('#add-panel summary').focus(); notify((wasEditing ? '已更新' : '已添加') + name);
 });
 $('#add-panel').addEventListener('toggle', () => { if ($('#add-panel').open) $('#site-name').focus(); });
 function updateDate() {
