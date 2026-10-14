@@ -25,26 +25,26 @@ colors:
 typography:
   headline:
     fontFamily: '"Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
-    fontSize: "42px"
+    fontSize: "52px"
     fontWeight: 600
-    lineHeight: 1.5
+    lineHeight: 1.2
     letterSpacing: "-0.035em"
   search:
-    fontSize: "16px"
+    fontSize: "18px"
   label:
-    fontSize: "13px"
+    fontSize: "14px"
 rounded:
   control: "8px"
   action: "10px"
   badge: "12px"
-  search: "15px"
+  search: "14px"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "{colors.accent-text}"
-    rounded: "{rounded.control}"
-    padding: "10px 21px"
-    height: "43px"
+    rounded: "{rounded.action}"
+    padding: "10px 20px"
+    height: "44px"
 ---
 
 # 启页设计规范
@@ -59,15 +59,15 @@ components:
 
 ## Typography
 
-使用系统字体，无外部字体请求。主标题在平板缩为 35px、手机缩为 30px；搜索输入维持 16px。网站名称单行省略，域名为辅助信息。
+使用系统字体，无外部字体请求。主标题在桌面为 52px、平板为 44px、手机为 32px；搜索输入桌面为 18px、手机为 16px。网站名称单行省略，域名与辅助信息不小于 13px。
 
 ## Layout
 
-外层最大宽度 1248px，主内容最大宽度 790px。快捷网站默认四列，760px 及以下三列，520px 及以下两列；外层水平留白依次为 56px、28px、22px。手机添加表单纵向排列，隐藏键盘提示。
+外层最大宽度 1280px，主内容最大宽度 960px。快捷网站默认四列，900px 及以下三列，600px 及以下两列；外层水平留白依次为 32px、28px、20px。设置入口固定在顶部右侧；设置抽屉桌面宽 480px，手机占满屏幕。偏好、网站管理、添加表单共用抽屉内的纵向滚动区，标题和完成按钮始终可见。
 
 ## Elevation & Depth
 
-使用平面色阶和细边框区分表面，搜索框聚焦时增加轻微柔影。颜色过渡统一为 180ms ease-out，选中色块位移统一为 240ms cubic-bezier(.16,1,.3,1)；遵守减少动态效果设置。
+采用 TasteSkill 的 The product performs 方向：让真实搜索和设置成为视觉重点，使用平面色阶与留白区分区域；仅表单输入保留细边框，不使用静态阴影。颜色过渡统一为 180ms ease-out，选中色块位移统一为 240ms cubic-bezier(.16,1,.3,1)。系统减少动态效果或用户关闭动效时均取消位移与过渡。
 
 ## Shapes
 
@@ -75,7 +75,9 @@ components:
 
 ## Components
 
-搜索是主操作，搜索引擎居中排列、间距充足，点击区域至少 44px 高；选中色块在选项之间平滑移动，选中项使用强调底色和反色文字。网站入口为轻量链接行，悬停微抬升并放大图标；编辑模式才显示删除按钮。添加网站使用可展开的内联表单。键盘焦点使用 2px 强调色轮廓，输入框整体显示焦点边框。入场只执行一次，不循环；减少动态效果时关闭位移、缩放与入场。
+搜索是主操作，搜索引擎居中排列、间距充足，点击区域至少 44px 高；选中色块在选项之间平滑移动，选中项使用强调底色和反色文字。网站入口为轻量链接行，悬停微抬升并放大图标；管理操作放在设置抽屉。添加网站使用可展开的内联表单。键盘焦点使用 2px 强调色轮廓，输入框整体显示焦点边框。入场只执行一次，不循环；减少动态效果时关闭位移、缩放与入场。
+
+快捷网站的编辑、排序、删除与添加集中于设置抽屉；原生 dialog 提供模态焦点管理、Escape 关闭和关闭后焦点恢复。设置即时生效并保存到本浏览器；主题支持浅色、深色、跟随系统，另提供默认搜索引擎、新标签页打开和动效开关。管理列表使用两端对齐的轻量行，名称和地址在左，操作在右。
 
 ## Do's and Don'ts
 
