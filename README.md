@@ -4,6 +4,8 @@
 
 网站文件全部位于 `dist/`，无需构建和后端。设置仅保存在当前浏览器，不跨设备同步，不采集搜索记录。
 
+默认入口使用随站点保存的官方图标，来源见 `dist/icons/sources.json`；新增网站尝试加载其 `/favicon.ico`，不发送来源页面信息，失败时回退文字标识。搜索引擎使用居中滑动选中状态，交互动效遵守系统“减少动态效果”设置。
+
 本地预览：在仓库根目录运行 `python -m http.server 4173 --directory dist`，打开 `http://localhost:4173`。
 
 线上地址：https://yingqianlan1234.github.io/yqlweb/
