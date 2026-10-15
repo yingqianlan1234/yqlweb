@@ -6,15 +6,17 @@
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f7f8fa">
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
-  <title>启页 · 你的上网起点</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23365f91'/%3E%3Cpath d='M12 28V12h16M12 28l16-16M20 28h8v-8' stroke='white' fill='none' stroke-width='2.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=f0d41a68d918">
-  <script src="./app.js?v=bc85ab020bf4" defer></script>
+  <title>栖点 · 你的上网起点</title>
+  <link rel="icon" href="./icons/qidian.svg">
+  <link rel="stylesheet" href="./style.css?v=55699e845588">
+  <script src="./app.js?v=1fff07f23e55" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
   <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></symbol>
@@ -29,7 +31,7 @@
   </defs></svg>
   <div class="shell">
     <header class="topbar">
-      <a class="brand" href="./" aria-label="启页首页"><span class="brand-mark"><svg><use href="#i-out"/></svg></span><span>启页<span class="brand-dot">.</span></span></a>
+      <a class="brand" href="./" aria-label="栖点首页"><span class="brand-mark"><svg aria-hidden="true"><use href="#i-compass"/></svg></span><span>栖点<span class="brand-dot">.</span></span></a>
       <div class="date-line"><time id="clock"></time><div class="calendar-line"><time id="date"></time><span id="weekday" class="weekday"></span></div></div>
       <div class="top-actions"><button id="theme-toggle" class="icon-button" type="button" aria-label="切换到深色模式" title="切换到深色模式"><svg><use href="#i-moon"/></svg></button><button id="settings-open" class="settings-button" type="button" aria-haspopup="dialog" aria-controls="settings-dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
     </header>
@@ -65,7 +67,7 @@
       </div>
       <p class="keyboard-tip"><kbd>/</kbd> 快速搜索<span>·</span><kbd>Enter</kbd> 出发</p>
     </main>
-    <footer class="quote-widget" aria-label="一言短句"><div class="quote-copy" aria-live="polite" aria-atomic="true"><p id="quote-text"></p><a id="quote-source" class="quote-source">启页短句</a></div><button id="quote-next" class="text-button" type="button"><svg><use href="#i-refresh"/></svg><span>换一句</span></button></footer>
+    <footer class="quote-widget" aria-label="一言短句"><div class="quote-copy" aria-live="polite" aria-atomic="true"><p id="quote-text"></p><a id="quote-source" class="quote-source">栖点短句</a></div><button id="quote-next" class="text-button" type="button"><svg><use href="#i-refresh"/></svg><span>换一句</span></button></footer>
   </div>
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <div class="settings-panel">
@@ -75,7 +77,7 @@
           <h3 id="preferences-title">浏览偏好</h3>
           <label class="setting-row" for="setting-theme"><span><strong>页面主题</strong><small>选择适合现在的明暗</small></span><select id="setting-theme"><option value="light">浅色</option><option value="dark">深色</option><option value="system">跟随系统</option></select></label>
           <label class="setting-row" for="setting-engine"><span><strong>默认搜索引擎</strong><small>与首页的选择保持一致</small></span><select id="setting-engine"><option value="baidu">百度</option><option value="bing">必应</option><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option></select></label>
-          <label class="setting-row" for="setting-newtab"><span><strong>在新标签页打开</strong><small>搜索和网站跳转时保留启页</small></span><input id="setting-newtab" class="switch" type="checkbox" role="switch"></label>
+          <label class="setting-row" for="setting-newtab"><span><strong>在新标签页打开</strong><small>搜索和网站跳转时保留栖点</small></span><input id="setting-newtab" class="switch" type="checkbox" role="switch"></label>
           <label class="setting-row" for="setting-motion"><span><strong>界面动效</strong><small>也会遵循系统的减少动态效果设置</small></span><input id="setting-motion" class="switch" type="checkbox" role="switch" checked></label>
         </section>
         <section class="settings-section" aria-labelledby="appearance-title">
@@ -117,10 +119,23 @@
         </section>
         <section id="manage-sites" class="settings-section" aria-labelledby="manage-title">
           <div class="section-heading"><h3 id="manage-title">快捷网站</h3><span id="manage-count" class="count-label"></span></div>
-          <p class="section-description">编辑名称与地址，或调整排列顺序。</p>
+          <p class="section-description">首页可拖动图标排序，拖到下方移除；也可在这里用按钮管理。</p>
           <div id="site-manager" class="site-manager"></div>
           <p id="manager-empty" class="empty-state" hidden>列表还是空的，从下面添加第一个网站。</p>
           <details id="add-panel"><summary><svg><use href="#i-plus"/></svg><span id="form-title">添加网站</span></summary><form id="add-form"><div class="add-fields"><label>网站名称<input id="site-name" maxlength="24" placeholder="例如：我的博客" required></label><label>网站地址<input id="site-url" type="text" inputmode="url" placeholder="例如：example.com" required></label><div class="form-actions"><button type="button" id="cancel-edit" class="text-button" hidden>取消编辑</button><button type="submit" class="primary-button">添加网站</button></div></div><p id="add-error" class="error" role="alert" hidden></p></form></details>
+        </section>
+        <section class="settings-section" aria-labelledby="bookmarks-title">
+          <h3 id="bookmarks-title">浏览器书签</h3>
+          <p class="section-description">安装配套扩展后连接 Brave 书签。勾选添加为快捷入口；首页排序或移除不会修改浏览器原书签。</p>
+          <div class="background-actions"><button id="bookmarks-connect" class="primary-button" type="button">连接浏览器书签</button><a class="text-button" href="./downloads/qidian-bookmarks.zip" download>下载配套扩展</a><button id="bookmarks-disconnect" class="text-button" type="button" hidden>断开连接</button></div>
+          <details class="bookmarks-help"><summary>首次安装说明</summary><p class="section-description">下载并解压扩展，在 Brave 地址栏打开 <code>brave://extensions</code>，开启“开发者模式”，点击“加载已解压的扩展程序”，选择解压后的文件夹。刷新本页，再点击连接。</p></details>
+          <p id="bookmarks-status" class="section-description" role="status">尚未连接，仅在本机读取，不上传书签。</p>
+          <div id="bookmarks-picker" hidden>
+            <label class="library-search" for="bookmarks-search"><span class="sr-only">搜索书签名称、网址或文件夹</span><input id="bookmarks-search" type="search" placeholder="搜索书签名称、网址或文件夹"></label>
+            <div class="bookmarks-toolbar"><button id="bookmarks-select" class="text-button" type="button">全选当前结果</button><span id="bookmarks-count" class="count-label"></span></div>
+            <div id="bookmarks-list" class="bookmarks-list" aria-label="可添加的浏览器书签"></div>
+            <button id="bookmarks-add" class="primary-button" type="button" disabled>添加到快捷网站</button>
+          </div>
         </section>
         <p class="settings-note">更改即时生效并自动保存。手机与电脑的设置各自独立，不会上传你的快捷网站。</p>
       </div>
@@ -128,5 +143,6 @@
     </div>
   </dialog>
   <div id="notice" class="notice" role="status" hidden></div>
+  <div id="shortcut-dropzone" class="shortcut-dropzone" hidden><svg aria-hidden="true"><use href="#i-trash"/></svg><span>拖到这里移除</span></div>
 </body>
 </html>

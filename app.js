@@ -196,12 +196,14 @@ function renderSites() {
   $('#shortcut-count').textContent = sites.length;
   $('#empty-state').hidden = sites.length > 0;
   sites.forEach((site, index) => {
-    const wrap = document.createElement('div'); wrap.className = 'shortcut';
+    const wrap = document.createElement('div'); wrap.className = 'shortcut'; wrap.dataset.index = index;
     const link = document.createElement('a'); link.className = 'shortcut-link'; link.href = websiteUrl(site.url).href;
+    link.draggable = false;
     if (newTab) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
-    const badge = document.createElement('span'); badge.className = 'site-badge'; badge.setAttribute('aria-hidden', 'true');
+    const badge = document.createElement('span'); badge.className = 'site-badge'; badge.setAttribute('aria-hidden', 'true'); badge.title = '拖动图标排序，拖到下方移除';
     const fallback = document.createElement('span'); fallback.textContent = typeof site.badge === 'string' ? site.badge.slice(0,2) : Array.from(site.name.trim())[0] || '站';
     const icon = document.createElement('img'); icon.className = 'site-favicon'; icon.alt = ''; icon.width = 26; icon.height = 26; icon.referrerPolicy = 'no-referrer';
+    icon.draggable = false;
     icon.addEventListener('load', () => { fallback.hidden = true; icon.classList.add('loaded'); });
     icon.addEventListener('error', () => { icon.remove(); });
     const target = new URL(link.href);
@@ -216,12 +218,77 @@ function renderSites() {
   });
 }
 renderSites();
+function animateChange(element, frames, duration = 220) {
+  if (!motionEnabled || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  element.getAnimations().forEach(animation => animation.cancel());
+  element.animate(frames, { duration, easing: 'cubic-bezier(.16,1,.3,1)' });
+}
+let shortcutDrag = null;
+let suppressShortcutClick = false;
+const dropzone = $('#shortcut-dropzone');
+$('#shortcuts').addEventListener('pointerdown', event => {
+  const badge = event.target.closest('.site-badge');
+  if (!badge || event.button !== 0 || !event.isPrimary || shortcutDrag) return;
+  shortcutDrag = { id: event.pointerId, node: badge.closest('.shortcut'), x: event.clientX, y: event.clientY, active: false };
+});
+$('#shortcuts').addEventListener('click', event => { if (suppressShortcutClick) { event.preventDefault(); event.stopPropagation(); } }, true);
+document.addEventListener('pointermove', event => {
+  const drag = shortcutDrag;
+  if (!drag || drag.id !== event.pointerId) return;
+  if (!drag.active) {
+    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 7) return;
+    drag.active = true; suppressShortcutClick = true;
+    const rect = drag.node.getBoundingClientRect();
+    drag.offsetX = drag.x - rect.x; drag.offsetY = drag.y - rect.y;
+    drag.ghost = drag.node.cloneNode(true); drag.ghost.className = 'shortcut drag-ghost'; drag.ghost.setAttribute('aria-hidden', 'true'); drag.ghost.inert = true;
+    drag.ghost.style.width = rect.width + 'px'; document.body.append(drag.ghost);
+    drag.node.classList.add('is-dragging'); document.body.classList.add('dragging-shortcut'); dropzone.hidden = false;
+  }
+  event.preventDefault();
+  drag.ghost.style.transform = `translate(${event.clientX - drag.offsetX}px,${event.clientY - drag.offsetY}px)`;
+  const target = document.elementFromPoint(event.clientX, event.clientY);
+  dropzone.classList.toggle('is-over', !!target?.closest('#shortcut-dropzone'));
+  const next = target?.closest('#shortcuts .shortcut');
+  if (!next || next === drag.node) return;
+  const children = [...$('#shortcuts').children];
+  const before = new Map(children.map(node => [node, node.getBoundingClientRect()]));
+  if (children.indexOf(drag.node) < children.indexOf(next)) next.after(drag.node); else next.before(drag.node);
+  children.filter(node => node !== drag.node).forEach(node => {
+    const old = before.get(node), rect = node.getBoundingClientRect();
+    animateChange(node, [{ transform: `translate(${old.x - rect.x}px,${old.y - rect.y}px)` }, { transform: 'none' }]);
+  });
+}, { passive: false });
+function finishShortcutDrag(event, cancelled = false) {
+  const drag = shortcutDrag;
+  if (!drag || (event && event.pointerId !== drag.id)) return;
+  shortcutDrag = null;
+  if (!drag.active) return;
+  const remove = !cancelled && document.elementFromPoint(event.clientX, event.clientY)?.closest('#shortcut-dropzone');
+  drag.ghost.remove(); dropzone.hidden = true; dropzone.classList.remove('is-over'); document.body.classList.remove('dragging-shortcut');
+  if (!cancelled) {
+    const previous = sites.slice();
+    sites = [...$('#shortcuts').children].filter(node => !remove || node !== drag.node).map(node => previous[Number(node.dataset.index)]);
+    persistSites();
+    if (remove) {
+      const removed = previous[Number(drag.node.dataset.index)];
+      notify('已移除' + removed.name);
+      const undo = document.createElement('button'); undo.type = 'button'; undo.textContent = '撤销';
+      undo.addEventListener('click', () => { sites.splice(Math.min(Number(drag.node.dataset.index), sites.length), 0, removed); persistSites(); notify('已恢复' + removed.name); }, { once: true });
+      $('#notice').append(undo); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { $('#notice').hidden = true; }, 7000);
+    } else notify('排列顺序已保存');
+  } else renderSites();
+  setTimeout(() => { suppressShortcutClick = false; }, 0);
+}
+document.addEventListener('pointerup', event => finishShortcutDrag(event));
+document.addEventListener('pointercancel', event => finishShortcutDrag(event, true));
+window.addEventListener('blur', () => finishShortcutDrag(null, true));
+document.addEventListener('keydown', event => { if (event.key === 'Escape') finishShortcutDrag(null, true); });
 let editingSite = null;
 function resetSiteForm() {
   editingSite = null; $('#add-form').reset(); $('#add-error').hidden = true;
   $('#form-title').textContent = '添加网站'; $('#add-form [type=submit]').textContent = '添加网站'; $('#cancel-edit').hidden = true;
 }
-function persistSites() { save('sites', sites); renderSites(); renderSiteManager(); }
+function persistSites() { save('sites', sites); renderSites(); renderSiteManager(); if (bookmarkEntries.length) renderBookmarks(); }
 function renderSiteManager() {
   $('#site-manager').replaceChildren(); $('#manage-count').textContent = sites.length + ' 个'; $('#manager-empty').hidden = sites.length > 0;
   sites.forEach((site, index) => {
@@ -286,6 +353,89 @@ $('#add-form').addEventListener('submit', event => {
   persistSites(); resetSiteForm(); $('#add-panel').open = false; $('#add-panel summary').focus(); notify((wasEditing ? '已更新' : '已添加') + name);
 });
 $('#add-panel').addEventListener('toggle', () => { if ($('#add-panel').open) $('#site-name').focus(); });
+let bookmarksLinked = read('bookmarksConnected', false) === true;
+let bookmarkEntries = [];
+let bookmarkSelection = new Set();
+let bookmarkRequest = null;
+function filteredBookmarks() {
+  const query = $('#bookmarks-search').value.trim().toLocaleLowerCase();
+  return bookmarkEntries.filter(item => `${item.name} ${item.url} ${item.folder}`.toLocaleLowerCase().includes(query));
+}
+function updateBookmarkSelection() {
+  $('#bookmarks-add').disabled = bookmarkSelection.size === 0;
+  $('#bookmarks-add').textContent = bookmarkSelection.size ? `添加 ${bookmarkSelection.size} 个到快捷网站` : '添加到快捷网站';
+  $('#bookmarks-count').textContent = `${filteredBookmarks().length} 个结果 · 已选 ${bookmarkSelection.size} 个`;
+  const available = [...$('#bookmarks-list').querySelectorAll('input:not(:disabled)')];
+  $('#bookmarks-select').disabled = available.length === 0;
+  $('#bookmarks-select').textContent = available.length && available.every(input => input.checked) ? '取消选择当前结果' : '全选当前结果';
+}
+function renderBookmarks() {
+  const list = $('#bookmarks-list'); list.replaceChildren();
+  const existing = new Set(sites.map(site => websiteUrl(site.url).href));
+  for (const entry of filteredBookmarks()) {
+    const label = document.createElement('label'); label.className = 'bookmark-row';
+    const input = document.createElement('input'); input.type = 'checkbox'; input.disabled = existing.has(entry.url); input.checked = bookmarkSelection.has(entry.url);
+    input.addEventListener('change', () => { if (input.checked) bookmarkSelection.add(entry.url); else bookmarkSelection.delete(entry.url); updateBookmarkSelection(); });
+    const copy = document.createElement('span'), name = document.createElement('strong'), detail = document.createElement('small');
+    name.textContent = entry.name; detail.textContent = (input.disabled ? '已添加 · ' : '') + entry.folder + ' · ' + new URL(entry.url).hostname;
+    label.title = entry.url; copy.append(name, detail); label.append(input, copy); list.append(label);
+  }
+  if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'section-description'; empty.textContent = '没有匹配的书签。'; list.append(empty); }
+  updateBookmarkSelection();
+}
+function requestBookmarks() {
+  if (bookmarkRequest) return;
+  const requestId = crypto.randomUUID();
+  $('#bookmarks-connect').disabled = true; $('#bookmarks-status').textContent = '正在连接本地书签扩展…';
+  const timer = setTimeout(() => {
+    bookmarkRequest = null; $('#bookmarks-connect').disabled = false;
+    $('#bookmarks-status').textContent = '未收到扩展响应。请先安装并启用配套扩展，再刷新本页重试。';
+    $('.bookmarks-help').open = true;
+  }, 4000);
+  bookmarkRequest = { requestId, timer };
+  window.postMessage({ channel: 'qidian-bookmarks-page', type: 'read', requestId }, location.origin);
+}
+window.addEventListener('message', event => {
+  const message = event.data;
+  if (event.source !== window || event.origin !== location.origin || message?.channel !== 'qidian-bookmarks-extension') return;
+  if (message.type === 'changed') { if (bookmarksLinked) requestBookmarks(); return; }
+  if (!bookmarkRequest || message.requestId !== bookmarkRequest.requestId || !['tree', 'error'].includes(message.type)) return;
+  clearTimeout(bookmarkRequest.timer); bookmarkRequest = null; $('#bookmarks-connect').disabled = false;
+  if (message.type === 'error' || !Array.isArray(message.tree)) { $('#bookmarks-status').textContent = '扩展无法读取书签，请检查扩展权限后重试。'; return; }
+  const entries = [], seen = new Set(), pending = message.tree.map(node => ({ node, folder: '' }));
+  while (pending.length) {
+    const { node, folder } = pending.shift(); if (!node || typeof node !== 'object') continue;
+    const name = typeof node.title === 'string' ? node.title.trim().slice(0, 200) : '';
+    const url = typeof node.url === 'string' && /^https?:\/\//i.test(node.url) ? websiteUrl(node.url) : null;
+    if (url && !seen.has(url.href)) { seen.add(url.href); entries.push({ name: name || url.hostname, url: url.href, folder: folder || '书签' }); }
+    if (Array.isArray(node.children)) pending.unshift(...node.children.map(child => ({ node: child, folder: [folder, name].filter(Boolean).join(' / ').slice(0, 500) })));
+  }
+  bookmarkEntries = entries; bookmarkSelection = new Set([...bookmarkSelection].filter(url => seen.has(url)));
+  bookmarksLinked = true; save('bookmarksConnected', true); $('#bookmarks-picker').hidden = false; $('#bookmarks-disconnect').hidden = false;
+  $('#bookmarks-connect').textContent = '刷新书签'; $('#bookmarks-status').textContent = `已连接 · ${entries.length} 个网页书签，仅在本机读取`; renderBookmarks();
+});
+$('#bookmarks-connect').addEventListener('click', requestBookmarks);
+$('#bookmarks-search').addEventListener('input', renderBookmarks);
+$('#bookmarks-select').addEventListener('click', () => {
+  const existing = new Set(sites.map(site => websiteUrl(site.url).href));
+  const available = filteredBookmarks().filter(item => !existing.has(item.url));
+  const allSelected = available.length > 0 && available.every(item => bookmarkSelection.has(item.url));
+  available.forEach(item => { if (allSelected) bookmarkSelection.delete(item.url); else bookmarkSelection.add(item.url); }); renderBookmarks();
+});
+$('#bookmarks-add').addEventListener('click', () => {
+  const existing = new Set(sites.map(site => websiteUrl(site.url).href));
+  const selected = bookmarkEntries.filter(item => bookmarkSelection.has(item.url) && !existing.has(item.url));
+  sites.push(...selected.map(({ name, url }) => ({ name, url }))); bookmarkSelection.clear(); persistSites(); renderBookmarks();
+  $('#bookmarks-status').textContent = `已添加 ${selected.length} 个快捷网站，浏览器原书签保持不变。`;
+});
+$('#bookmarks-disconnect').addEventListener('click', () => {
+  if (bookmarkRequest) { clearTimeout(bookmarkRequest.timer); bookmarkRequest = null; }
+  bookmarksLinked = false; bookmarkEntries = []; bookmarkSelection.clear(); save('bookmarksConnected', false);
+  window.postMessage({ channel: 'qidian-bookmarks-page', type: 'disconnect', requestId: crypto.randomUUID() }, location.origin);
+  $('#bookmarks-list').replaceChildren(); $('#bookmarks-picker').hidden = true; $('#bookmarks-disconnect').hidden = true; $('#bookmarks-connect').disabled = false;
+  $('#bookmarks-connect').textContent = '连接浏览器书签'; $('#bookmarks-status').textContent = '已断开连接，已添加的快捷网站继续保留。';
+});
+window.addEventListener('load', () => { if (bookmarksLinked) setTimeout(requestBookmarks, 250); });
 const LOCAL_QUOTES = [
   '把今天留给值得的事，也留一点给自己。',
   '不必一次走很远，先把眼前这一步走好。',
@@ -334,8 +484,9 @@ async function loadOnlineQuote() {
   } catch {
     quoteIndex = (quoteIndex + 1) % LOCAL_QUOTES.length;
     $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex]; delete $('#quote-text').dataset.online;
-    $('#quote-source').textContent = '启页短句 · 联网暂不可用'; $('#quote-source').removeAttribute('href');
+    $('#quote-source').textContent = '栖点短句 · 联网暂不可用'; $('#quote-source').removeAttribute('href');
   } finally {
+    animateChange($('.quote-copy'), [{ opacity: .3 }, { opacity: 1 }]);
     // 一言文档限制 2 QPS，避免快速连点触发上游限流。
     setTimeout(() => { button.disabled = false; button.removeAttribute('aria-busy'); }, Math.max(0, 600 - (Date.now() - started)));
   }
@@ -369,6 +520,7 @@ function renderHot() {
   }
   $('#hot-prev').disabled = hotPage === 0; $('#hot-next').disabled = hotPage === 1 || hotItems.length <= 5;
   $('#hot-page').textContent = hotItems.length ? `${hotPage + 1} / ${Math.ceil(hotItems.length / 5)}` : '— / —';
+  if (hotItems.length) animateChange($('#hot-list'), [{ opacity: .35, clipPath: 'inset(0 0 8% 0)' }, { opacity: 1, clipPath: 'inset(0)' }]);
 }
 async function loadHot(source, force = false) {
   const version = ++hotVersion; hotSource = source; hotPage = 0; hotItems = [];
