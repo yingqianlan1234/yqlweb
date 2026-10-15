@@ -277,11 +277,36 @@ $('#add-form').addEventListener('submit', event => {
   persistSites(); resetSiteForm(); $('#add-panel').open = false; $('#add-panel summary').focus(); notify((wasEditing ? '已更新' : '已添加') + name);
 });
 $('#add-panel').addEventListener('toggle', () => { if ($('#add-panel').open) $('#site-name').focus(); });
+const LOCAL_QUOTES = [
+  '把今天留给值得的事，也留一点给自己。',
+  '不必一次走很远，先把眼前这一步走好。',
+  '窗外有风，心里也留一点空地。',
+  '偶尔绕路，也会遇见新的风景。',
+  '让好奇心先出发，答案会在路上。',
+  '把纷杂留在页外，把注意力交给此刻。',
+  '今天的进度，也可以是好好休息。',
+  '有些灵感，藏在停下来的一分钟里。'
+];
+let quoteIndex = 0;
+let quoteDate = '';
+let dateTimer;
 function updateDate() {
-  const now = new Date(); $('#date').textContent = new Intl.DateTimeFormat('zh-CN', { month:'long',day:'numeric',weekday:'long' }).format(now);
-  $('#clock').textContent = new Intl.DateTimeFormat('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}).format(now); $('#clock').dateTime = now.toISOString();
+  const now = new Date();
+  $('#date').textContent = new Intl.DateTimeFormat('zh-CN', { month:'long',day:'numeric' }).format(now);
+  $('#date').dateTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  $('#weekday').textContent = new Intl.DateTimeFormat('zh-CN', { weekday:'long' }).format(now);
+  $('#clock').textContent = new Intl.DateTimeFormat('zh-CN', { hour:'2-digit',minute:'2-digit',hourCycle:'h23' }).format(now);
+  $('#clock').dateTime = now.toISOString(); $('#clock').setAttribute('aria-label', '本地时间 ' + $('#clock').textContent);
+  if (quoteDate !== $('#date').dateTime) {
+    quoteDate = $('#date').dateTime;
+    quoteIndex = (now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) % LOCAL_QUOTES.length;
+    $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex];
+  }
+  clearTimeout(dateTimer); dateTimer = setTimeout(updateDate, 60000 - now.getSeconds() * 1000 - now.getMilliseconds() + 20);
 }
-updateDate(); setInterval(updateDate, 30000);
+updateDate();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) updateDate(); });
+$('#quote-next').addEventListener('click', () => { quoteIndex = (quoteIndex + 1) % LOCAL_QUOTES.length; $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex]; });
 
 // 背景 Blob 和已授权的目录句柄保存在 IndexedDB，彼此使用独立键。
 function backgroundStorage(action, value, key = 'custom') {
