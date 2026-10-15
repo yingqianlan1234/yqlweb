@@ -35,6 +35,54 @@ function save(key, value) {
   try { localStorage.setItem('yql.' + key, JSON.stringify(value)); $('#settings-status').textContent = '已自动保存'; }
   catch { $('#settings-status').textContent = '当前会话有效，无法保存'; notify('浏览器暂时无法保存设置，本次会话仍可使用。'); }
 }
+let glassBlur = read('glassBlur', null);
+if (!Number.isFinite(glassBlur) || glassBlur < 0 || glassBlur > 40) glassBlur = null;
+let glassTransparency = read('glassTransparency', null);
+if (!Number.isFinite(glassTransparency) || glassTransparency < 0 || glassTransparency > 36) glassTransparency = null;
+let accentColor = read('accentColor', null);
+if (typeof accentColor !== 'string' || !/^#[\da-f]{6}$/i.test(accentColor)) accentColor = null;
+const smallGlassScreen = matchMedia('(max-width:600px)');
+function colorLuminance(rgb) {
+  const values = rgb.map(value => { const v = value / 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
+  return values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
+}
+function colorContrast(a, b) {
+  const values = [colorLuminance(a), colorLuminance(b)].sort((x, y) => x - y);
+  return (values[1] + .05) / (values[0] + .05);
+}
+function applyAppearance() {
+  const dark = theme === 'dark';
+  const transparency = Math.min(glassTransparency ?? (dark ? 24 : 36), dark ? 24 : 36);
+  const blur = glassBlur ?? (smallGlassScreen.matches ? 16 : 24);
+  const style = document.documentElement.style;
+  if (glassBlur === null) style.removeProperty('--glass-blur'); else style.setProperty('--glass-blur', blur + 'px');
+  style.setProperty('--glass-opacity', 1 - transparency / 100);
+  $('#setting-glass-blur').value = blur; $('#glass-blur-value').value = blur + ' px';
+  $('#setting-glass-transparency').max = dark ? 24 : 36;
+  $('#setting-glass-transparency').value = transparency; $('#glass-transparency-value').value = transparency + '%';
+  $('#setting-accent-color').value = accentColor || (dark ? '#acccf5' : '#365f91');
+  for (const key of ['--accent', '--custom-accent', '--accent-text', '--accent-ink', '--soft']) style.removeProperty(key);
+  if (!accentColor) return;
+  const rgb = accentColor.slice(1).match(/../g).map(value => parseInt(value, 16));
+  const text = colorContrast(rgb, [0, 0, 0]) > colorContrast(rgb, [255, 255, 255]) ? '#000000' : '#ffffff';
+  const alpha = 1 - transparency / 100;
+  // 以任意壁纸下最不利的玻璃底色计算文字用色；按钮保留用户选择的原色。
+  const glassBase = dark ? [18, 26, 33].map(v => (v * alpha + 255 * (1 - alpha)) * .8832 + 255 * .1168) : [247, 248, 250].map(v => v * alpha);
+  const base = dark ? [22, 28, 27] : [247, 248, 250];
+  const soft = base.map((v, i) => Math.round(v * .84 + rgb[i] * .16));
+  let ink = rgb;
+  for (let amount = 1; Math.min(...[glassBase, base, soft].map(bg => colorContrast(ink, bg))) < 4.6 && amount <= 100; amount++) ink = rgb.map(v => Math.round(v + ((dark ? 255 : 0) - v) * amount / 100));
+  style.setProperty('--accent', accentColor); style.setProperty('--custom-accent', accentColor);
+  style.setProperty('--accent-text', text); style.setProperty('--accent-ink', `rgb(${ink.join(' ')})`); style.setProperty('--soft', `rgb(${soft.join(' ')})`);
+}
+$('#setting-glass-blur').addEventListener('input', event => { glassBlur = Number(event.target.value); applyAppearance(); save('glassBlur', glassBlur); });
+$('#setting-glass-transparency').addEventListener('input', event => { glassTransparency = Number(event.target.value); applyAppearance(); save('glassTransparency', glassTransparency); });
+$('#setting-accent-color').addEventListener('input', event => { accentColor = event.target.value; applyAppearance(); save('accentColor', accentColor); });
+$('#appearance-reset').addEventListener('click', () => {
+  glassBlur = null; glassTransparency = null; accentColor = null; applyAppearance();
+  save('glassBlur', null); save('glassTransparency', null); save('accentColor', null);
+});
+smallGlassScreen.addEventListener('change', applyAppearance);
 function websiteUrl(value) {
   const text = value.trim();
   if (!text || /\s/.test(text)) return null;
@@ -88,6 +136,7 @@ function applyTheme() {
   $('#theme-toggle').setAttribute('aria-label', label); $('#theme-toggle').title = label;
   $('#theme-toggle use').setAttribute('href', theme === 'light' ? '#i-moon' : '#i-sun');
   $('meta[name=theme-color]').content = theme === 'light' ? '#f7f8fa' : '#161c1b';
+  applyAppearance();
 }
 applyTheme();
 function setThemePreference(value) {
