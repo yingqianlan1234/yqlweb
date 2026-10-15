@@ -28,9 +28,21 @@ function read(key, fallback) {
   catch { return fallback; }
 }
 let noticeTimer;
+let noticeAnimation;
+function hideNotice() {
+  const notice = $('#notice');
+  noticeAnimation?.cancel();
+  if (document.documentElement.dataset.motion === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches) { notice.hidden = true; return; }
+  const animation = notice.animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: '0 4px' }], { duration: 220, easing: 'cubic-bezier(.25,.1,.25,1)', fill: 'forwards' });
+  noticeAnimation = animation;
+  animation.onfinish = () => { if (noticeAnimation === animation) { notice.hidden = true; animation.cancel(); noticeAnimation = null; } };
+}
 function notify(message) {
-  $('#notice').textContent = message; $('#notice').hidden = false;
-  clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { $('#notice').hidden = true; }, 4000);
+  const notice = $('#notice'); const start = notice.hidden ? { opacity: 0, translate: '0 8px' } : { opacity: getComputedStyle(notice).opacity, translate: getComputedStyle(notice).translate };
+  noticeAnimation?.cancel(); noticeAnimation = null;
+  notice.textContent = message; notice.hidden = false;
+  if (document.documentElement.dataset.motion !== 'off' && !matchMedia('(prefers-reduced-motion: reduce)').matches) noticeAnimation = notice.animate([start, { opacity: 1, translate: '0 0' }], { duration: 280, easing: 'cubic-bezier(.25,.1,.25,1)' });
+  clearTimeout(noticeTimer); noticeTimer = setTimeout(hideNotice, 1780);
 }
 function save(key, value) {
   try { localStorage.setItem('yql.' + key, JSON.stringify(value)); $('#settings-status').textContent = '已自动保存'; }
@@ -129,6 +141,19 @@ function setEngine(value) {
   $('#setting-engine').value = value;
   save('engine', value); updateSearchHint(); moveEngineIndicator();
 }
+function setEnginePicker(open, returnFocus = false) {
+  $('.engine-picker').classList.toggle('is-open', open);
+  $('#engine-toggle').setAttribute('aria-expanded', String(open));
+  $('.engines').inert = !open; $('.engines').setAttribute('aria-hidden', String(!open));
+  if (open) moveEngineIndicator();
+  if (returnFocus) $('#engine-toggle').focus();
+}
+$('#engine-toggle').addEventListener('click', () => setEnginePicker($('#engine-toggle').getAttribute('aria-expanded') !== 'true'));
+$('#engine-toggle').addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); setEnginePicker(true); $('[name=engine]:checked').focus(); } });
+$('.engines').addEventListener('click', event => { if (event.target.matches('[name=engine]')) requestAnimationFrame(() => setEnginePicker(false, true)); });
+document.addEventListener('pointerdown', event => { if (!event.target.closest('.engine-picker')) setEnginePicker(false); });
+$('.engine-picker').addEventListener('focusout', event => { if (event.relatedTarget && !$('.engine-picker').contains(event.relatedTarget)) setEnginePicker(false); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && $('#engine-toggle').getAttribute('aria-expanded') === 'true') { event.preventDefault(); setEnginePicker(false, true); } });
 function moveEngineIndicator() {
   const label = $('[name=engine]:checked').parentElement;
   moveSelectionIndicator($('.engines'), label, $('.engines .engine-indicator'));
@@ -168,6 +193,7 @@ function updateSearchHint() {
   let direct = false;
   try { direct = !!destination($('#query').value, selectedEngine)?.direct; } catch {}
   $('.search-submit').setAttribute('aria-label', direct ? '前往网站' : '使用' + ENGINES[selectedEngine].name + '搜索');
+  $('#engine-toggle').title = '当前使用' + ENGINES[selectedEngine].name;
   $('.search-submit use').setAttribute('href', direct ? '#i-out' : '#i-arrow');
   $('#search-error').hidden = true;
 }
@@ -334,7 +360,7 @@ function finishShortcutDrag(event, cancelled = false) {
       notify('已移除' + removed.name);
       const undo = document.createElement('button'); undo.type = 'button'; undo.textContent = '撤销';
       undo.addEventListener('click', () => { sites.splice(Math.min(removedIndex, sites.length), 0, removed); sitesPage = Math.floor(removedIndex / SITES_PER_PAGE); persistSites(); notify('已恢复' + removed.name); }, { once: true });
-      $('#notice').append(undo); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { $('#notice').hidden = true; }, 7000);
+      $('#notice').append(undo);
     } else notify('排列顺序已保存');
   } else { sitesPage = drag.originalPage; renderSites(); }
   setTimeout(() => { suppressShortcutClick = false; }, 0);
