@@ -191,16 +191,27 @@ document.addEventListener('keydown', event => {
 let sites = read('sites', DEFAULT_SITES);
 if (!Array.isArray(sites)) sites = DEFAULT_SITES;
 sites = sites.filter(site => site && typeof site.name === 'string' && typeof site.url === 'string' && websiteUrl(site.url));
+const SITES_PER_PAGE = 10;
+let sitesPage = 0;
+let shortcutDrag = null;
 function renderSites() {
+  const displayed = shortcutDrag?.active ? shortcutDrag.order : sites;
+  const pageCount = Math.max(1, Math.ceil(displayed.length / SITES_PER_PAGE));
+  sitesPage = Math.min(Math.max(0, sitesPage), pageCount - 1);
+  $('#sites-prev').disabled = sitesPage === 0;
+  $('#sites-next').disabled = sitesPage === pageCount - 1;
+  $('#sites-page').textContent = `${sitesPage + 1} / ${pageCount}`;
   $('#shortcuts').replaceChildren();
   $('#shortcut-count').textContent = sites.length;
   $('#empty-state').hidden = sites.length > 0;
-  sites.forEach((site, index) => {
+  displayed.slice(sitesPage * SITES_PER_PAGE, (sitesPage + 1) * SITES_PER_PAGE).forEach((site, offset) => {
+    const index = sitesPage * SITES_PER_PAGE + offset;
     const wrap = document.createElement('div'); wrap.className = 'shortcut'; wrap.dataset.index = index;
+    if (shortcutDrag?.active && site === shortcutDrag.site) wrap.classList.add('is-dragging');
     const link = document.createElement('a'); link.className = 'shortcut-link'; link.href = websiteUrl(site.url).href;
     link.draggable = false;
     if (newTab) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
-    const badge = document.createElement('span'); badge.className = 'site-badge'; badge.setAttribute('aria-hidden', 'true'); badge.title = '拖动图标排序，拖到下方移除';
+    const badge = document.createElement('span'); badge.className = 'site-badge'; badge.setAttribute('aria-hidden', 'true'); badge.title = '拖动图标排序；停在翻页按钮上可跨页，拖到下方移除';
     const fallback = document.createElement('span'); fallback.textContent = typeof site.badge === 'string' ? site.badge.slice(0,2) : Array.from(site.name.trim())[0] || '站';
     const icon = document.createElement('img'); icon.className = 'site-favicon'; icon.alt = ''; icon.width = 26; icon.height = 26; icon.referrerPolicy = 'no-referrer';
     icon.draggable = false;
@@ -223,15 +234,42 @@ function animateChange(element, frames, duration = 220) {
   element.getAnimations().forEach(animation => animation.cancel());
   element.animate(frames, { duration, easing: 'cubic-bezier(.16,1,.3,1)' });
 }
-let shortcutDrag = null;
 let suppressShortcutClick = false;
 const dropzone = $('#shortcut-dropzone');
+function changeSitesPage(page) {
+  if (shortcutDrag || suppressShortcutClick) return;
+  sitesPage = page; renderSites(); animateChange($('#shortcuts'), [{ opacity: .4 }, { opacity: 1 }]);
+}
+$('#sites-prev').addEventListener('click', () => changeSitesPage(sitesPage - 1));
+$('#sites-next').addEventListener('click', () => changeSitesPage(sitesPage + 1));
 $('#shortcuts').addEventListener('pointerdown', event => {
   const badge = event.target.closest('.site-badge');
   if (!badge || event.button !== 0 || !event.isPrimary || shortcutDrag) return;
-  shortcutDrag = { id: event.pointerId, node: badge.closest('.shortcut'), x: event.clientX, y: event.clientY, active: false };
+  const node = badge.closest('.shortcut');
+  shortcutDrag = { id: event.pointerId, node, site: sites[Number(node.dataset.index)], originalPage: sitesPage, order: sites.slice(), x: event.clientX, y: event.clientY, active: false };
 });
 $('#shortcuts').addEventListener('click', event => { if (suppressShortcutClick) { event.preventDefault(); event.stopPropagation(); } }, true);
+function clearDragPageTimer(drag) {
+  clearTimeout(drag.pageTimer); drag.pageTimer = null;
+  drag.pageButton?.classList.remove('drag-page-target'); drag.pageButton = null;
+}
+function hoverDragPage(drag, button) {
+  if (drag.pageButton === button) return;
+  clearDragPageTimer(drag);
+  if (!button || button.disabled) return;
+  drag.pageButton = button; button.classList.add('drag-page-target');
+  drag.pageTimer = setTimeout(() => {
+    if (shortcutDrag !== drag) return;
+    const destinationPage = sitesPage + (button.id === 'sites-next' ? 1 : -1);
+    const from = drag.order.indexOf(drag.site); drag.order.splice(from, 1);
+    const destination = button.id === 'sites-next' ? destinationPage * SITES_PER_PAGE : (destinationPage + 1) * SITES_PER_PAGE - 1;
+    drag.order.splice(Math.min(destination, drag.order.length), 0, drag.site);
+    sitesPage = destinationPage; renderSites();
+    drag.node = $('#shortcuts .is-dragging');
+    // 每次停留只翻一页；移开按钮后才允许再次触发。
+    drag.pageTimer = null;
+  }, 550);
+}
 document.addEventListener('pointermove', event => {
   const drag = shortcutDrag;
   if (!drag || drag.id !== event.pointerId) return;
@@ -248,14 +286,20 @@ document.addEventListener('pointermove', event => {
   drag.ghost.style.transform = `translate(${event.clientX - drag.offsetX}px,${event.clientY - drag.offsetY}px)`;
   const target = document.elementFromPoint(event.clientX, event.clientY);
   dropzone.classList.toggle('is-over', !!target?.closest('#shortcut-dropzone'));
-  const next = target?.closest('#shortcuts .shortcut');
-  if (!next || next === drag.node) return;
+  hoverDragPage(drag, target?.closest('#sites-prev,#sites-next'));
   const children = [...$('#shortcuts').children];
-  const before = new Map(children.map(node => [node, node.getBoundingClientRect()]));
+  // 命中固定格子，不使用正在移动的图标作为换位目标。
+  const next = children.find(node => { const r = node.getBoundingClientRect(); return event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom; });
+  if (!next || next === drag.node) return;
+  const before = new Map(children.map(node => [node, node.firstElementChild.getBoundingClientRect()]));
   if (children.indexOf(drag.node) < children.indexOf(next)) next.after(drag.node); else next.before(drag.node);
+  const start = sitesPage * SITES_PER_PAGE;
+  const ordered = [...$('#shortcuts').children].map(node => drag.order[Number(node.dataset.index)]);
+  drag.order.splice(start, ordered.length, ...ordered);
+  [...$('#shortcuts').children].forEach((node, index) => { node.dataset.index = start + index; });
   children.filter(node => node !== drag.node).forEach(node => {
     const old = before.get(node), rect = node.getBoundingClientRect();
-    animateChange(node, [{ transform: `translate(${old.x - rect.x}px,${old.y - rect.y}px)` }, { transform: 'none' }]);
+    animateChange(node.firstElementChild, [{ transform: `translate(${old.x - rect.x}px,${old.y - rect.y}px)` }, { transform: 'none' }]);
   });
 }, { passive: false });
 function finishShortcutDrag(event, cancelled = false) {
@@ -263,20 +307,21 @@ function finishShortcutDrag(event, cancelled = false) {
   if (!drag || (event && event.pointerId !== drag.id)) return;
   shortcutDrag = null;
   if (!drag.active) return;
+  clearDragPageTimer(drag);
   const remove = !cancelled && document.elementFromPoint(event.clientX, event.clientY)?.closest('#shortcut-dropzone');
   drag.ghost.remove(); dropzone.hidden = true; dropzone.classList.remove('is-over'); document.body.classList.remove('dragging-shortcut');
   if (!cancelled) {
-    const previous = sites.slice();
-    sites = [...$('#shortcuts').children].filter(node => !remove || node !== drag.node).map(node => previous[Number(node.dataset.index)]);
+    const removedIndex = sites.indexOf(drag.site);
+    sites = remove ? drag.order.filter(site => site !== drag.site) : drag.order;
     persistSites();
     if (remove) {
-      const removed = previous[Number(drag.node.dataset.index)];
+      const removed = drag.site;
       notify('已移除' + removed.name);
       const undo = document.createElement('button'); undo.type = 'button'; undo.textContent = '撤销';
-      undo.addEventListener('click', () => { sites.splice(Math.min(Number(drag.node.dataset.index), sites.length), 0, removed); persistSites(); notify('已恢复' + removed.name); }, { once: true });
+      undo.addEventListener('click', () => { sites.splice(Math.min(removedIndex, sites.length), 0, removed); sitesPage = Math.floor(removedIndex / SITES_PER_PAGE); persistSites(); notify('已恢复' + removed.name); }, { once: true });
       $('#notice').append(undo); clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { $('#notice').hidden = true; }, 7000);
     } else notify('排列顺序已保存');
-  } else renderSites();
+  } else { sitesPage = drag.originalPage; renderSites(); }
   setTimeout(() => { suppressShortcutClick = false; }, 0);
 }
 document.addEventListener('pointerup', event => finishShortcutDrag(event));
@@ -350,6 +395,7 @@ $('#add-form').addEventListener('submit', event => {
   if (error) return;
   const wasEditing = editingSite !== null;
   if (wasEditing) sites[editingSite] = { name, url: url.href }; else sites.push({ name, url: url.href });
+  sitesPage = Math.floor((wasEditing ? editingSite : sites.length - 1) / SITES_PER_PAGE);
   persistSites(); resetSiteForm(); $('#add-panel').open = false; $('#add-panel summary').focus(); notify((wasEditing ? '已更新' : '已添加') + name);
 });
 $('#add-panel').addEventListener('toggle', () => { if ($('#add-panel').open) $('#site-name').focus(); });
@@ -425,6 +471,7 @@ $('#bookmarks-select').addEventListener('click', () => {
 $('#bookmarks-add').addEventListener('click', () => {
   const existing = new Set(sites.map(site => websiteUrl(site.url).href));
   const selected = bookmarkEntries.filter(item => bookmarkSelection.has(item.url) && !existing.has(item.url));
+  if (selected.length) sitesPage = Math.floor(sites.length / SITES_PER_PAGE);
   sites.push(...selected.map(({ name, url }) => ({ name, url }))); bookmarkSelection.clear(); persistSites(); renderBookmarks();
   $('#bookmarks-status').textContent = `已添加 ${selected.length} 个快捷网站，浏览器原书签保持不变。`;
 });
