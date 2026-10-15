@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg">
-  <link rel="stylesheet" href="./style.css?v=55699e845588">
-  <script src="./app.js?v=1fff07f23e55" defer></script>
+  <link rel="stylesheet" href="./style.css?v=fc0e627058d6">
+  <script src="./app.js?v=045063ff4cc3" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -54,6 +54,7 @@
       <section class="shortcuts-section" aria-labelledby="shortcuts-heading">
         <div class="section-heading"><h2 id="shortcuts-heading">常用网站 <span id="shortcut-count"></span></h2><div class="section-actions"><button id="add-shortcut" class="text-button" type="button"><svg><use href="#i-plus"/></svg>添加</button><button id="edit-toggle" class="text-button" type="button"><svg><use href="#i-edit"/></svg><span>管理</span></button></div></div>
         <div id="shortcuts" class="shortcuts"></div>
+        <nav class="shortcut-pagination" aria-label="常用网站分页"><button id="sites-prev" class="text-button" type="button" aria-label="常用网站上一页" title="点击翻页；拖动图标时在这里停留可跨页">上一页</button><span id="sites-page" aria-live="polite"></span><button id="sites-next" class="text-button" type="button" aria-label="常用网站下一页" title="点击翻页；拖动图标时在这里停留可跨页">下一页</button></nav>
         <p id="empty-state" class="empty-state" hidden>还没有快捷入口，添加一个常去的网站吧。</p>
       </section>
       <section class="hot-section" aria-labelledby="hot-heading">
