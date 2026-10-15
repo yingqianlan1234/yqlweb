@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg?v=7fc461101fe1">
-  <link rel="stylesheet" href="./style.css?v=f3b89fef5de2">
-  <script src="./app.js?v=6c705320dd47" defer></script>
+  <link rel="stylesheet" href="./style.css?v=5c0eecbaf7a0">
+  <script src="./app.js?v=f3105c2f0392" defer></script>
   <script src="./search-assist.js?v=b6febdcd0a21" defer></script>
 </head>
 <body>
@@ -94,7 +94,8 @@
           <h3 id="appearance-title">色彩与玻璃</h3>
           <p class="section-description">启用壁纸后，各独立模块共用柔和玻璃效果，调整后即时预览。</p>
           <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>统一调整各模块背后的壁纸</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">24 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="24"></span></label>
-          <label class="setting-row background-adjustment" for="setting-glass-transparency"><span><strong>面板透明度</strong><small>浅色最高 50%，深色最高 42%，文字自动适配</small></span><span class="range-control"><output id="glass-transparency-value" for="setting-glass-transparency">36%</output><input id="setting-glass-transparency" type="range" min="0" max="50" step="1" value="36"></span></label>
+          <label class="setting-row background-adjustment" for="setting-glass-transparency"><span><strong>面板透明度</strong><small>0–100%，调整底色，保留模糊与高光</small></span><span class="range-control"><output id="glass-transparency-value" for="setting-glass-transparency">36%</output><input id="setting-glass-transparency" type="range" aria-describedby="glass-transparency-hint glass-transparency-reference" min="0" max="100" step="1" value="36"></span></label>
+          <div class="transparency-guidance"><p id="glass-transparency-hint" role="status">较清晰（0–40%）：底色遮挡较多，通常更易阅读。</p><small id="glass-transparency-reference">可读性仅供参考，取决于壁纸明暗和细节。</small></div>
           <label class="setting-row" for="setting-accent-color"><span><strong>强调色</strong><small>用于按钮、选中状态与焦点提示</small></span><input id="setting-accent-color" class="color-control" type="color" value="#d97757"></label>
           <button id="appearance-reset" class="text-button" type="button">恢复默认外观</button>
         </section>
