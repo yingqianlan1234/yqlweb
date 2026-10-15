@@ -8,11 +8,11 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>启页 · 你的上网起点</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23365f91'/%3E%3Cpath d='M12 28V12h16M12 28l16-16M20 28h8v-8' stroke='white' fill='none' stroke-width='2.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=0fb525d4efab">
-  <script src="./app.js?v=2ee2d1a2b353" defer></script>
+  <link rel="stylesheet" href="./style.css?v=f5b06cc31dbc">
+  <script src="./app.js?v=932f524295ce" defer></script>
 </head>
 <body>
-  <div id="page-background" aria-hidden="true"></div>
+  <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
   <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
@@ -68,12 +68,22 @@
           <label class="setting-row" for="setting-motion"><span><strong>界面动效</strong><small>也会遵循系统的减少动态效果设置</small></span><input id="setting-motion" class="switch" type="checkbox" role="switch" checked></label>
         </section>
         <section class="settings-section" aria-labelledby="background-title">
-          <h3 id="background-title">背景图片</h3>
+          <h3 id="background-title">当前背景</h3>
           <p class="section-description">选择手机或电脑里的图片，打造自己的起始页。图片仅保存在此浏览器，不会上传。</p>
           <input id="background-file" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" tabindex="-1" aria-label="选择背景图片">
           <div id="background-preview" class="background-preview" hidden><img id="background-thumbnail" alt="当前背景预览"><span id="background-name"></span></div>
           <div class="background-actions"><button id="background-choose" class="primary-button" type="button">选择图片</button><button id="background-reset" class="text-button" type="button" disabled>恢复默认</button></div>
           <p id="background-message" class="section-description background-message" role="status">支持 JPG、PNG、WebP、AVIF 和 GIF，最大 20 MB。</p>
+        </section>
+        <section class="settings-section" aria-labelledby="library-title">
+          <h3 id="library-title">Wallpaper Engine 壁纸库</h3>
+          <p class="section-description">选择本地壁纸文件夹，搜索后点击切换。视频直接播放；场景和网页壁纸使用预览图。</p>
+          <p class="library-path-hint">常见目录：Steam 库 / steamapps / workshop / content / 431960，也可以选择单个壁纸项目文件夹。</p>
+          <input id="library-folder" class="sr-only" type="file" webkitdirectory multiple tabindex="-1" aria-label="选择 Wallpaper Engine 壁纸文件夹">
+          <button id="library-choose" class="primary-button" type="button">选择壁纸文件夹</button>
+          <label class="library-search" for="library-search"><span class="sr-only">搜索壁纸名称或文件夹编号</span><input id="library-search" type="search" placeholder="搜索壁纸名称或编号" disabled></label>
+          <p id="library-status" class="section-description" role="status">文件只在本机读取，不会上传。刷新后需重新选择目录，已选背景会保留。</p>
+          <div id="library-results" class="library-results" aria-label="本地壁纸列表"></div>
         </section>
         <section id="manage-sites" class="settings-section" aria-labelledby="manage-title">
           <div class="section-heading"><h3 id="manage-title">快捷网站</h3><span id="manage-count" class="count-label"></span></div>

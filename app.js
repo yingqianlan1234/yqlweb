@@ -204,7 +204,7 @@ $('#settings-dialog').addEventListener('click', event => { if (event.target === 
 $('#setting-theme').addEventListener('change', event => setThemePreference(event.target.value));
 $('#setting-engine').addEventListener('change', event => setEngine(event.target.value));
 $('#setting-newtab').addEventListener('change', event => { newTab = event.target.checked; save('newTab', newTab); renderSites(); });
-$('#setting-motion').addEventListener('change', event => { motionEnabled = event.target.checked; document.documentElement.dataset.motion = motionEnabled ? 'on' : 'off'; save('motion', motionEnabled); });
+$('#setting-motion').addEventListener('change', event => { motionEnabled = event.target.checked; document.documentElement.dataset.motion = motionEnabled ? 'on' : 'off'; save('motion', motionEnabled); syncBackgroundPlayback(); });
 $('#cancel-edit').addEventListener('click', resetSiteForm);
 $('#add-form').addEventListener('submit', event => {
   event.preventDefault(); const name = $('#site-name').value.trim(); const url = websiteUrl($('#site-url').value);
@@ -240,22 +240,54 @@ function backgroundStorage(action, value) {
   });
 }
 let backgroundUrl = null;
+let backgroundPreviewUrl = null;
 let backgroundBusy = false;
+let libraryScanBusy = false;
+let currentLibraryPath = '';
 function applyBackground(value) {
+  const video = $('#background-video'); video.pause(); video.removeAttribute('src'); video.removeAttribute('poster'); video.load(); video.hidden = true;
   if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
+  if (backgroundPreviewUrl) URL.revokeObjectURL(backgroundPreviewUrl);
   backgroundUrl = value ? URL.createObjectURL(value.blob) : null;
-  $('#page-background').style.backgroundImage = backgroundUrl ? `url("${backgroundUrl}")` : '';
+  backgroundPreviewUrl = value?.preview instanceof Blob ? URL.createObjectURL(value.preview) : null;
+  const isVideo = value?.kind === 'video';
+  $('#page-background').style.backgroundImage = backgroundUrl && !isVideo ? `url("${backgroundUrl}")` : '';
+  if (isVideo) { video.muted = true; video.src = backgroundUrl; if (backgroundPreviewUrl) video.poster = backgroundPreviewUrl; video.hidden = false; syncBackgroundPlayback(); }
   document.body.classList.toggle('has-background', !!value);
   $('#background-preview').hidden = !value;
-  if (value) { $('#background-thumbnail').src = backgroundUrl; $('#background-name').textContent = value.name; }
+  if (value) { $('#background-thumbnail').src = backgroundPreviewUrl || backgroundUrl; $('#background-name').textContent = value.name; }
   else { $('#background-thumbnail').removeAttribute('src'); $('#background-name').textContent = ''; }
+  currentLibraryPath = value?.libraryPath || '';
+  document.querySelectorAll('.library-item').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.path === currentLibraryPath)));
   $('#background-reset').disabled = !value;
 }
+const reducedBackgroundMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function syncBackgroundPlayback() {
+  const video = $('#background-video'); if (video.hidden) return;
+  if (!motionEnabled || reducedBackgroundMotion.matches || document.hidden) video.pause();
+  else video.play().catch(() => { $('#background-message').textContent = '背景已加载，浏览器暂未允许自动播放；可重新点击壁纸播放。'; });
+}
+document.addEventListener('visibilitychange', syncBackgroundPlayback);
+reducedBackgroundMotion.addEventListener('change', syncBackgroundPlayback);
 function setBackgroundBusy(busy) {
   backgroundBusy = busy;
   $('#background-choose').disabled = busy;
   $('#background-reset').disabled = busy || !backgroundUrl;
   $('#background-choose').textContent = busy ? '正在处理…' : '选择图片';
+  $('#library-choose').disabled = busy || libraryScanBusy;
+  document.querySelectorAll('.library-item').forEach(button => { button.disabled = busy || button.dataset.available === 'false'; });
+}
+async function prepareBackgroundImage(file, name = file.name) {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image(); image.src = url; await image.decode();
+    const scale = Math.min(1, 2560 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext('2d'); context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+    if (!blob) throw new Error('图片无法处理');
+    return { blob, name };
+  } finally { URL.revokeObjectURL(url); }
 }
 $('#background-choose').addEventListener('click', () => $('#background-file').click());
 $('#background-file').addEventListener('change', async event => {
@@ -264,19 +296,11 @@ $('#background-file').addEventListener('change', async event => {
   if (!['image/jpeg','image/png','image/webp','image/avif','image/gif'].includes(file.type)) { $('#background-message').textContent = '请选择 JPG、PNG、WebP、AVIF 或 GIF 图片。'; return; }
   if (file.size > 20 * 1024 * 1024) { $('#background-message').textContent = '图片超过 20 MB，请选择较小的图片。'; return; }
   setBackgroundBusy(true); $('#background-message').textContent = '正在读取并保存背景…';
-  let sourceUrl;
   try {
-    sourceUrl = URL.createObjectURL(file);
-    const image = new Image(); image.src = sourceUrl; await image.decode();
-    const scale = Math.min(1, 2560 / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    const context = canvas.getContext('2d'); context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
-    if (!blob) throw new Error('图片无法处理');
-    const value = { blob, name: file.name }; await backgroundStorage('write', value); applyBackground(value);
+    const value = await prepareBackgroundImage(file); await backgroundStorage('write', value); applyBackground(value);
     $('#background-message').textContent = '背景已保存。图片会居中铺满，GIF 会转为静态背景。'; $('#settings-status').textContent = '背景已保存';
   } catch { $('#background-message').textContent = '未能保存背景。请换一张有效图片，并确认浏览器允许网站存储。'; }
-  finally { if (sourceUrl) URL.revokeObjectURL(sourceUrl); setBackgroundBusy(false); }
+  finally { setBackgroundBusy(false); }
 });
 $('#background-reset').addEventListener('click', async () => {
   if (backgroundBusy) return; setBackgroundBusy(true);
@@ -286,3 +310,100 @@ $('#background-reset').addEventListener('click', async () => {
 });
 setBackgroundBusy(true);
 backgroundStorage('read').then(value => { if (value && value.blob instanceof Blob) applyBackground(value); }).catch(() => { $('#background-message').textContent = '此浏览器暂时无法读取背景存储；其他功能可正常使用。'; }).finally(() => setBackgroundBusy(false));
+
+let wallpaperLibrary = [];
+let libraryPreviewUrls = [];
+const libraryImagePattern = /\.(jpe?g|png|webp|avif|gif|bmp)$/i;
+const libraryVideoPattern = /\.(mp4|m4v|webm|ogv|ogg)$/i;
+function libraryFilePath(path) {
+  const parts = [];
+  for (const part of path.replace(/\\/g, '/').split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') parts.pop(); else parts.push(part);
+  }
+  return parts.join('/').toLowerCase();
+}
+async function readWallpaperLibrary(files) {
+  if (libraryScanBusy) return;
+  libraryScanBusy = true; setBackgroundBusy(backgroundBusy); $('#library-search').disabled = true;
+  $('#library-status').textContent = '正在读取壁纸项目…';
+  try {
+    const paths = new Map(files.map(file => [libraryFilePath(file.webkitRelativePath || file.name), file]));
+    const projects = files.filter(file => /(^|\/)project\.json$/i.test((file.webkitRelativePath || file.name).replace(/\\/g, '/')));
+    let skipped = 0;
+    const entries = await Promise.all(projects.map(async project => {
+      try {
+        const path = (project.webkitRelativePath || project.name).replace(/\\/g, '/');
+        const base = path.slice(0, path.lastIndexOf('/') + 1);
+        const metadata = JSON.parse((await project.text()).replace(/^\uFEFF/, ''));
+        const resolve = relative => typeof relative === 'string' ? paths.get(libraryFilePath(base + relative)) : null;
+        const media = resolve(metadata.file);
+        const preview = resolve(metadata.preview) || resolve('preview.jpg') || resolve('preview.png') || resolve('preview.gif');
+        const video = media && libraryVideoPattern.test(media.name);
+        const image = media && libraryImagePattern.test(media.name);
+        const selected = video || image ? media : preview;
+        const type = typeof metadata.type === 'string' ? metadata.type.toLowerCase() : '';
+        const kind = video ? '视频' : image ? '图片' : type === 'scene' ? '场景 · 预览图' : type === 'web' ? '网页 · 预览图' : '预览图';
+        const title = typeof metadata.title === 'string' && metadata.title.trim() ? metadata.title : base.split('/').filter(Boolean).pop() || '未命名壁纸';
+        return { path, title, kind, video: !!video, file: selected, preview: preview || (image ? media : null), previewUrl: null };
+      } catch { skipped++; return null; }
+    }));
+    $('#library-results').replaceChildren(); libraryPreviewUrls.forEach(url => URL.revokeObjectURL(url)); libraryPreviewUrls = [];
+    wallpaperLibrary = entries.filter(Boolean).sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+    $('#library-search').value = ''; $('#library-search').disabled = !wallpaperLibrary.length;
+    renderWallpaperLibrary();
+    if (!projects.length) $('#library-status').textContent = '没有找到 project.json。请选择包含壁纸项目的 431960 目录，或单个壁纸项目文件夹。';
+    else if (!wallpaperLibrary.length) $('#library-status').textContent = '找到项目文件，但未能读取有效信息。原背景保持不变。';
+    else if (skipped) $('#library-status').textContent += `，另有 ${skipped} 个项目无法读取。`;
+  } catch { $('#library-status').textContent = '未能读取这个文件夹，请重新选择。原背景保持不变。'; }
+  finally { libraryScanBusy = false; setBackgroundBusy(backgroundBusy); }
+}
+function renderWallpaperLibrary() {
+  const query = $('#library-search').value.trim().toLocaleLowerCase();
+  const entries = wallpaperLibrary.filter(entry => `${entry.title} ${entry.kind} ${entry.path}`.toLocaleLowerCase().includes(query));
+  $('#library-results').replaceChildren();
+  for (const entry of entries) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'library-item';
+    button.dataset.path = entry.path; button.dataset.available = String(!!entry.file); button.disabled = !entry.file || backgroundBusy;
+    button.setAttribute('aria-pressed', String(entry.path === currentLibraryPath));
+    const cover = document.createElement('span'); cover.className = 'library-cover';
+    if (entry.preview) {
+      if (!entry.previewUrl) { entry.previewUrl = URL.createObjectURL(entry.preview); libraryPreviewUrls.push(entry.previewUrl); }
+      const image = document.createElement('img'); image.alt = ''; image.loading = 'lazy'; image.src = entry.previewUrl;
+      image.addEventListener('error', () => { image.remove(); cover.textContent = '预览不可用'; }); cover.append(image);
+    } else cover.textContent = entry.video ? '视频壁纸' : '无预览';
+    const title = document.createElement('strong'); title.textContent = entry.title; title.title = entry.title;
+    const description = document.createElement('small'); description.textContent = entry.file ? entry.kind : '缺少媒体或预览图';
+    button.append(cover, title, description); button.addEventListener('click', () => selectLibraryWallpaper(entry)); $('#library-results').append(button);
+  }
+  $('#library-status').textContent = entries.length ? `显示 ${entries.length} / ${wallpaperLibrary.length} 个壁纸。点击即可应用。` : wallpaperLibrary.length ? '没有匹配的壁纸，试试其他名称或编号。' : '没有可显示的壁纸。';
+}
+async function prepareBackgroundVideo(file, name) {
+  const video = document.createElement('video'); video.muted = true; video.preload = 'auto'; video.playsInline = true;
+  const url = URL.createObjectURL(file);
+  try {
+    await new Promise((resolve, reject) => { video.onloadeddata = resolve; video.onerror = () => reject(new Error('这个视频格式暂时无法在当前浏览器播放')); video.src = url; video.load(); });
+    const canvas = document.createElement('canvas'); const ratio = Math.min(1, 640 / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.max(1, Math.round(video.videoWidth * ratio)); canvas.height = Math.max(1, Math.round(video.videoHeight * ratio)); canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    const preview = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+    return { blob: file, preview, name, kind: 'video' };
+  } finally { video.pause(); video.removeAttribute('src'); video.load(); URL.revokeObjectURL(url); }
+}
+async function selectLibraryWallpaper(entry) {
+  if (!entry.file || backgroundBusy) return;
+  setBackgroundBusy(true); $('#library-status').textContent = '正在读取并保存选中的壁纸…';
+  try {
+    const value = entry.video ? await prepareBackgroundVideo(entry.file, entry.title) : await prepareBackgroundImage(entry.file, entry.title);
+    value.libraryPath = entry.path; await backgroundStorage('write', value); applyBackground(value);
+    $('#library-status').textContent = `已应用「${entry.title}」${entry.video ? '，视频静音循环播放。' : '。'}`;
+    $('#background-message').textContent = entry.video ? '视频背景已保存；关闭界面动效或系统减少动态效果时暂停播放。' : `${entry.kind}已保存，刷新后仍可使用。`;
+    $('#settings-status').textContent = '背景已保存';
+  } catch (error) { $('#library-status').textContent = error.name === 'QuotaExceededError' ? '本地存储空间不足，请选择较小的壁纸。原背景保持不变。' : `应用失败：${error.message || '无法读取文件或保存到浏览器'}。原背景保持不变。`; }
+  finally { setBackgroundBusy(false); }
+}
+$('#library-choose').addEventListener('click', () => {
+  if (!('webkitdirectory' in $('#library-folder'))) { $('#library-status').textContent = '此浏览器不支持选择文件夹，请在电脑上的新版 Chrome 或 Edge 中使用。'; return; }
+  $('#library-folder').click();
+});
+$('#library-folder').addEventListener('change', event => { const files = Array.from(event.target.files); event.target.value = ''; if (files.length) readWallpaperLibrary(files); });
+$('#library-search').addEventListener('input', renderWallpaperLibrary);
