@@ -692,6 +692,65 @@ const LOCAL_QUOTES = [
   '今天的进度，也可以是好好休息。',
   '有些灵感，藏在停下来的一分钟里。'
 ];
+const OPENINGS = [
+  ['今天，想去哪里？', '从一次搜索，到每个常去的地方。'],
+  ['让好奇心先出发。', '想知道的事，就从这里找起。'],
+  ['新的发现，正在路上。', '打开熟悉的网站，也看看新的世界。'],
+  ['先找到今天的灵感。', '一个念头，也可以是不错的开始。'],
+  ['给今天一个好开头。', '把注意力，留给此刻想做的事。'],
+  ['从这里，慢慢展开。', '常去的地方，和偶然遇见的惊喜。'],
+  ['下一站，由你决定。', '去熟悉的地方，或找一个新答案。'],
+  ['今天也有新鲜事。', '带着一点好奇，看看世界的另一面。'],
+  ['想到了，就去看看。', '把一闪而过的念头，变成一次发现。'],
+  ['留一点时间给探索。', '答案、灵感和日常，都可以从这里开始。'],
+  ['你好，新的这一天。', '愿今天的每一次出发，都有所收获。'],
+  ['把想法，向前推一步。', '从眼前的小事开始，找到自己的节奏。']
+];
+function chooseOpening(previous = -1, random = Math.random()) {
+  const choices = OPENINGS.filter((_, index) => index !== previous);
+  return choices[Math.min(choices.length - 1, Math.floor(random * choices.length))];
+}
+let previousOpening = -1;
+try { const stored = sessionStorage.getItem('yql.opening'); if (stored !== null) previousOpening = Number(stored); } catch {}
+const opening = chooseOpening(previousOpening);
+$('#greeting').textContent = opening[0]; $('.intro-module .intro').textContent = opening[1];
+try { sessionStorage.setItem('yql.opening', String(OPENINGS.indexOf(opening))); } catch {}
+const SOLAR_FESTIVALS = {
+  '1-1': ['元旦', '新岁启封，愿你平安顺遂，心有所向。'],
+  '2-14': ['情人节', '愿爱意有回应，陪伴有温度。'],
+  '3-8': ['妇女节', '愿每一份热爱与选择，都被尊重。'],
+  '5-1': ['劳动节', '辛苦了，今天也留一点时间给自己。'],
+  '5-4': ['青年节', '愿你始终有好奇，也有向前的勇气。'],
+  '6-1': ['儿童节', '愿你保留童心，总能发现生活的小快乐。'],
+  '9-10': ['教师节', '致敬每一位认真点亮他人的老师。'],
+  '10-1': ['国庆节', '愿山河锦绣，也愿你的假期自在舒心。'],
+  '12-25': ['圣诞节', '愿冬日有暖意，身边有惦念。']
+};
+const LUNAR_FESTIVALS = {
+  '1-1': ['春节', '新春快乐，愿新的一年平安喜乐，万事可期。'],
+  '1-15': ['元宵节', '愿灯火可亲，人月两圆。'],
+  '5-5': ['端午节', '端午安康，愿日子清香，岁岁安宁。'],
+  '7-7': ['七夕', '愿心中所念，皆有温柔回应。'],
+  '8-15': ['中秋节', '愿月圆人团圆，所念皆安好。'],
+  '9-9': ['重阳节', '愿岁岁安康，常有相伴。'],
+  '12-8': ['腊八节', '一碗暖粥，愿你诸事周全，岁末安暖。']
+};
+function lunarDateParts(date) {
+  const parts = new Intl.DateTimeFormat('en-US-u-ca-chinese', { month:'numeric', day:'numeric' }).formatToParts(date);
+  return `${parts.find(part => part.type === 'month')?.value}-${parts.find(part => part.type === 'day')?.value}`;
+}
+function festivalsForDate(date) {
+  const festivals = [];
+  const solar = SOLAR_FESTIVALS[`${date.getMonth() + 1}-${date.getDate()}`];
+  if (solar) festivals.push(solar);
+  try {
+    const lunar = LUNAR_FESTIVALS[lunarDateParts(date)];
+    if (lunar) festivals.push(lunar);
+    const tomorrow = new Date(date); tomorrow.setDate(tomorrow.getDate() + 1);
+    if (lunarDateParts(tomorrow) === '1-1') festivals.push(['除夕', '辞旧迎新，愿团圆有时，幸福常在。']);
+  } catch { /* 不支持农历的浏览器仍显示公历节日。 */ }
+  return festivals;
+}
 let quoteIndex = 0;
 let quoteDate = '';
 let dateTimer;
@@ -704,6 +763,10 @@ function updateDate() {
   $('#clock').dateTime = now.toISOString(); $('#clock').setAttribute('aria-label', '本地时间 ' + $('#clock').textContent);
   if (quoteDate !== $('#date').dateTime) {
     quoteDate = $('#date').dateTime;
+    const festivals = festivalsForDate(now);
+    $('#festival').hidden = $('#festival-wish').hidden = !festivals.length;
+    $('#festival').textContent = festivals.map(([name]) => name).join(' · ');
+    $('#festival-wish').textContent = festivals.map(([, wish]) => wish).join(' ');
     quoteIndex = (now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) % LOCAL_QUOTES.length;
     if (!$('#quote-text').dataset.online) $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex];
   }
