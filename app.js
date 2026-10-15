@@ -224,18 +224,34 @@ sites = sites.filter(site => site && typeof site.name === 'string' && typeof sit
 const SITES_PER_PAGE = 10;
 let sitesPage = 0;
 let shortcutDrag = null;
+const siteCategory = site => typeof site.category === 'string' ? site.category.trim().slice(0, 24) : '';
+let expandedCategory = read('siteCategory', '*');
+function categorySites(order = sites) { return expandedCategory === '*' ? order : order.filter(site => siteCategory(site) === expandedCategory); }
+function renderCategories() {
+  const names = [...new Set(sites.map(siteCategory).filter(Boolean))];
+  if (expandedCategory !== '*' && expandedCategory !== '' && !names.includes(expandedCategory)) expandedCategory = '*';
+  const picker = $('#site-category-filter'); picker.replaceChildren();
+  for (const [value, label] of [['*', '展开全部'], ['', '未分类'], ...names.map(name => [name, name])]) {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; picker.append(option);
+  }
+  picker.value = expandedCategory;
+  $('#site-category-list').replaceChildren(...names.map(name => { const option = document.createElement('option'); option.value = name; return option; }));
+}
 function renderSites() {
-  const displayed = shortcutDrag?.active ? shortcutDrag.order : sites;
+  renderCategories();
+  const order = shortcutDrag?.active ? shortcutDrag.order : sites;
+  const displayed = categorySites(order);
   const pageCount = Math.max(1, Math.ceil(displayed.length / SITES_PER_PAGE));
   sitesPage = Math.min(Math.max(0, sitesPage), pageCount - 1);
   $('#sites-prev').disabled = sitesPage === 0;
   $('#sites-next').disabled = sitesPage === pageCount - 1;
   $('#sites-page').textContent = `${sitesPage + 1} / ${pageCount}`;
   $('#shortcuts').replaceChildren();
-  $('#shortcut-count').textContent = sites.length;
-  $('#empty-state').hidden = sites.length > 0;
+  $('#shortcut-count').textContent = expandedCategory === '*' ? sites.length : `${displayed.length} / ${sites.length}`;
+  $('#empty-state').hidden = displayed.length > 0;
+  $('#empty-state').textContent = sites.length ? '这个分类还没有网站，点击添加。' : '还没有快捷入口，添加一个常去的网站吧。';
   displayed.slice(sitesPage * SITES_PER_PAGE, (sitesPage + 1) * SITES_PER_PAGE).forEach((site, offset) => {
-    const index = sitesPage * SITES_PER_PAGE + offset;
+    const index = order.indexOf(site);
     const wrap = document.createElement('div'); wrap.className = 'shortcut'; wrap.dataset.index = index;
     if (shortcutDrag?.active && site === shortcutDrag.site) wrap.classList.add('is-dragging');
     const link = document.createElement('a'); link.className = 'shortcut-link'; link.href = websiteUrl(site.url).href;
@@ -254,11 +270,16 @@ function renderSites() {
     const copy = document.createElement('span'); copy.className = 'site-copy';
     const name = document.createElement('span'); name.className = 'site-name'; name.textContent = site.name; name.title = site.name;
     const domain = document.createElement('span'); domain.className = 'site-domain'; domain.textContent = new URL(link.href).hostname.replace(/^www\./, '');
+    if (siteCategory(site)) name.title += ' · ' + siteCategory(site);
     copy.append(name, domain); link.append(badge, copy); wrap.append(link);
     $('#shortcuts').append(wrap);
   });
 }
 renderSites();
+$('#site-category-filter').addEventListener('change', event => {
+  finishShortcutDrag(null, true); expandedCategory = event.target.value; save('siteCategory', expandedCategory); sitesPage = 0; renderSites();
+  animateChange($('#shortcuts'), [{ opacity: .65 }, { opacity: 1 }]);
+});
 function animateChange(element, frames, duration = 220) {
   if (!motionEnabled || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   element.getAnimations().forEach(animation => animation.cancel());
@@ -291,9 +312,11 @@ function hoverDragPage(drag, button) {
   drag.pageTimer = setTimeout(() => {
     if (shortcutDrag !== drag) return;
     const destinationPage = sitesPage + (button.id === 'sites-next' ? 1 : -1);
-    const from = drag.order.indexOf(drag.site); drag.order.splice(from, 1);
+    const filtered = categorySites(drag.order);
+    const from = filtered.indexOf(drag.site); filtered.splice(from, 1);
     const destination = button.id === 'sites-next' ? destinationPage * SITES_PER_PAGE : (destinationPage + 1) * SITES_PER_PAGE - 1;
-    drag.order.splice(Math.min(destination, drag.order.length), 0, drag.site);
+    filtered.splice(Math.min(destination, filtered.length), 0, drag.site);
+    let cursor = 0; drag.order = drag.order.map(site => expandedCategory === '*' || siteCategory(site) === expandedCategory ? filtered[cursor++] : site);
     sitesPage = destinationPage; renderSites();
     drag.node = $('#shortcuts .is-dragging');
     // 每次停留只翻一页；移开按钮后才允许再次触发。
@@ -326,8 +349,9 @@ function updateShortcutDrag(event) {
   if (children.indexOf(drag.node) < children.indexOf(next)) next.after(drag.node); else next.before(drag.node);
   const start = sitesPage * SITES_PER_PAGE;
   const ordered = [...$('#shortcuts').children].map(node => drag.order[Number(node.dataset.index)]);
-  drag.order.splice(start, ordered.length, ...ordered);
-  [...$('#shortcuts').children].forEach((node, index) => { node.dataset.index = start + index; });
+  const slots = categorySites(drag.order).slice(start, start + ordered.length).map(site => drag.order.indexOf(site));
+  slots.forEach((slot, index) => { drag.order[slot] = ordered[index]; });
+  [...$('#shortcuts').children].forEach((node, index) => { node.dataset.index = slots[index]; });
   children.filter(node => node !== drag.node).forEach(node => {
     const old = before.get(node), rect = node.getBoundingClientRect();
     animateChange(node.firstElementChild, [{ transform: `translate(${old.x - rect.x}px,${old.y - rect.y}px)` }, { transform: 'none' }]);
@@ -374,6 +398,7 @@ document.addEventListener('keydown', event => { if (event.key === 'Escape') fini
 let editingSite = null;
 function resetSiteForm() {
   editingSite = null; $('#add-form').reset(); $('#add-error').hidden = true;
+  $('#site-category').value = expandedCategory === '*' ? '' : expandedCategory;
   $('#form-title').textContent = '添加网站'; $('#add-form [type=submit]').textContent = '添加网站'; $('#cancel-edit').hidden = true;
 }
 function persistSites() { save('sites', sites); renderSites(); renderSiteManager(); if (bookmarkEntries.length) renderBookmarks(); }
@@ -383,7 +408,7 @@ function renderSiteManager() {
     const row = document.createElement('div'); row.className = 'manager-row';
     const copy = document.createElement('div'); copy.className = 'manager-copy';
     const name = document.createElement('strong'); name.textContent = site.name;
-    const domain = document.createElement('small'); domain.textContent = websiteUrl(site.url).hostname;
+    const domain = document.createElement('small'); domain.textContent = (siteCategory(site) || '未分类') + ' · ' + websiteUrl(site.url).hostname;
     copy.append(name, domain); row.append(copy);
     const actions = document.createElement('div'); actions.className = 'manager-actions';
     const specs = [
@@ -397,6 +422,7 @@ function renderSiteManager() {
       button.addEventListener('click', () => {
         if (action === 'edit') {
           editingSite = index; $('#site-name').value = site.name; $('#site-url').value = site.url;
+          $('#site-category').value = siteCategory(site);
           $('#form-title').textContent = '编辑网站'; $('#add-form [type=submit]').textContent = '保存修改'; $('#cancel-edit').hidden = false;
           $('#add-error').hidden = true; $('#add-panel').open = true; $('#site-name').focus(); return;
         }
@@ -437,8 +463,12 @@ $('#add-form').addEventListener('submit', event => {
   $('#add-error').hidden = !error; $('#add-error').textContent = error;
   if (error) return;
   const wasEditing = editingSite !== null;
-  if (wasEditing) sites[editingSite] = { name, url: url.href }; else sites.push({ name, url: url.href });
-  sitesPage = Math.floor((wasEditing ? editingSite : sites.length - 1) / SITES_PER_PAGE);
+  const category = $('#site-category').value.trim();
+  if (category === '*') { $('#add-error').hidden = false; $('#add-error').textContent = '请用文字命名分类。'; return; }
+  const updated = { name, url: url.href, category };
+  if (wasEditing) sites[editingSite] = updated; else sites.push(updated);
+  if (expandedCategory !== '*') { expandedCategory = category; save('siteCategory', expandedCategory); }
+  sitesPage = Math.floor(categorySites().indexOf(updated) / SITES_PER_PAGE);
   persistSites(); resetSiteForm(); $('#add-panel').open = false; $('#add-panel summary').focus(); notify((wasEditing ? '已更新' : '已添加') + name);
 });
 $('#add-panel').addEventListener('toggle', () => { if ($('#add-panel').open) $('#site-name').focus(); });
@@ -519,8 +549,8 @@ $('#bookmarks-select').addEventListener('click', () => {
 $('#bookmarks-add').addEventListener('click', () => {
   const existing = new Set(sites.map(site => websiteUrl(site.url).href));
   const selected = bookmarkEntries.filter(item => bookmarkSelection.has(item.url) && !existing.has(item.url));
-  if (selected.length) sitesPage = Math.floor(sites.length / SITES_PER_PAGE);
-  sites.push(...selected.map(({ name, url }) => ({ name, url }))); bookmarkSelection.clear(); persistSites(); renderBookmarks();
+  if (selected.length) sitesPage = Math.floor(categorySites().length / SITES_PER_PAGE);
+  sites.push(...selected.map(({ name, url }) => ({ name, url, category: expandedCategory === '*' ? '' : expandedCategory }))); bookmarkSelection.clear(); persistSites(); renderBookmarks();
   $('#bookmarks-status').textContent = `已添加 ${selected.length} 个快捷网站，浏览器原书签保持不变。`;
 });
 $('#bookmarks-disconnect').addEventListener('click', () => {

@@ -87,7 +87,7 @@
   function refresh() {
     cancelLookup(); if (document.activeElement !== query || composing) return;
     const text = query.value.trim();
-    if (!text) { render(historyMatches(''), historyEnabled ? (history.length ? '' : '暂无搜索记录') : '搜索历史已关闭', false); return; }
+    if (!text) { if (!historyEnabled) { close(); return; } render(historyMatches(''), history.length ? '' : '暂无搜索记录', false); return; }
     if (!enabled || text.length > 120 || websiteUrl(text) || /^[a-z][a-z\d+.-]*:/i.test(text)) { const items = historyMatches(text); items.length ? render(items, '', false) : close(); return; }
     render(historyMatches(text), '正在获取联想…', true);
     const current = version; timer = setTimeout(() => lookup(text, current), 250);
@@ -118,7 +118,7 @@
     record(value) { const text = value.trim(); if (!historyEnabled || !text || text.length > 200) return; history = [{ query: text, at: Date.now() }, ...history.filter(item => item.query.toLocaleLowerCase() !== text.toLocaleLowerCase())].slice(0, 30); save('searchHistory', history); }
   };
 
-  const preferenceKeys = ['theme', 'engine', 'newTab', 'motion', 'sites', 'glassBlur', 'glassTransparency', 'accentColor', 'hotSource', 'backgroundFit', 'backgroundBrightness', 'backgroundBlur', 'backgroundSpeed', 'backgroundPlaying', 'suggestions', 'searchHistoryEnabled', 'searchHistory'];
+  const preferenceKeys = ['theme', 'engine', 'newTab', 'motion', 'sites', 'siteCategory', 'glassBlur', 'glassTransparency', 'accentColor', 'hotSource', 'backgroundFit', 'backgroundBrightness', 'backgroundBlur', 'backgroundSpeed', 'backgroundPlaying', 'suggestions', 'searchHistoryEnabled', 'searchHistory'];
   document.querySelector('#preferences-export').addEventListener('click', () => {
     const preferences = {};
     for (const key of preferenceKeys) { const value = read(key, undefined); if (value !== undefined) preferences[key] = value; }
@@ -135,7 +135,7 @@
       const entries = Object.entries(data.preferences).filter(([key]) => preferenceKeys.includes(key));
       if (!entries.length) throw new Error('设置文件中没有可导入的数据。');
       for (const [key, value] of entries) {
-        if (key === 'sites' && (!Array.isArray(value) || value.length > 2000 || value.some(site => !site || typeof site.name !== 'string' || site.name.length > 200 || typeof site.url !== 'string' || !websiteUrl(site.url)))) throw new Error('快捷网站数据无效。');
+        if (key === 'sites' && (!Array.isArray(value) || value.length > 2000 || value.some(site => !site || typeof site.name !== 'string' || site.name.length > 200 || typeof site.url !== 'string' || !websiteUrl(site.url) || (site.category !== undefined && (typeof site.category !== 'string' || site.category.length > 24))))) throw new Error('快捷网站数据无效。');
         if (key === 'searchHistory' && (!Array.isArray(value) || value.length > 30 || validHistory(value).length !== value.length)) throw new Error('搜索历史数据无效。');
         if (!['sites', 'searchHistory'].includes(key) && value !== null && !['string', 'boolean', 'number'].includes(typeof value)) throw new Error('设置数据无效。');
       }
