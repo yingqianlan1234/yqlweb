@@ -240,7 +240,7 @@ let suppressShortcutClick = false;
 const dropzone = $('#shortcut-dropzone');
 function changeSitesPage(page) {
   if (shortcutDrag || suppressShortcutClick) return;
-  sitesPage = page; renderSites(); animateChange($('#shortcuts'), [{ opacity: .4 }, { opacity: 1 }]);
+  sitesPage = page; renderSites(); animateChange($('#shortcuts'), [{ opacity: .65 }, { opacity: 1 }]);
 }
 $('#sites-prev').addEventListener('click', () => changeSitesPage(sitesPage - 1));
 $('#sites-next').addEventListener('click', () => changeSitesPage(sitesPage + 1));
@@ -548,7 +548,7 @@ async function loadOnlineQuote() {
     $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex]; delete $('#quote-text').dataset.online;
     $('#quote-source').textContent = '栖点短句 · 联网暂不可用'; $('#quote-source').removeAttribute('href');
   } finally {
-    animateChange($('.quote-copy'), [{ opacity: .3 }, { opacity: 1 }]);
+    animateChange($('.quote-copy'), [{ opacity: .55 }, { opacity: 1 }]);
     // 一言文档限制 2 QPS，避免快速连点触发上游限流。
     setTimeout(() => { button.disabled = false; button.removeAttribute('aria-busy'); }, Math.max(0, 600 - (Date.now() - started)));
   }
@@ -585,7 +585,7 @@ function renderHot() {
     const title = document.createElement('span'); title.className = 'hot-title'; title.textContent = item.title;
     link.append(rank, title); row.append(link); $('#hot-list').append(row);
   }
-  if (hotItems.length) animateChange($('#hot-list'), [{ opacity: .35, clipPath: 'inset(0 0 8% 0)' }, { opacity: 1, clipPath: 'inset(0)' }]);
+  if (hotItems.length) animateChange($('#hot-list'), [{ opacity: .65 }, { opacity: 1 }]);
 }
 async function loadHot(source, force = false) {
   const version = ++hotVersion; hotSource = source; hotItems = [];
