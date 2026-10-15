@@ -244,6 +244,16 @@ let backgroundPreviewUrl = null;
 let backgroundBusy = false;
 let libraryScanBusy = false;
 let currentLibraryPath = '';
+let backgroundFit = read('backgroundFit', 'contain');
+if (!['contain', 'cover'].includes(backgroundFit)) backgroundFit = 'contain';
+function applyBackgroundFit() {
+  document.documentElement.style.setProperty('--background-fit', backgroundFit);
+  $('#setting-background-fit').value = backgroundFit;
+}
+applyBackgroundFit();
+$('#setting-background-fit').addEventListener('change', event => {
+  backgroundFit = event.target.value; applyBackgroundFit(); save('backgroundFit', backgroundFit);
+});
 function applyBackground(value) {
   const video = $('#background-video'); video.pause(); video.removeAttribute('src'); video.removeAttribute('poster'); video.load(); video.hidden = true;
   if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
@@ -298,7 +308,7 @@ $('#background-file').addEventListener('change', async event => {
   setBackgroundBusy(true); $('#background-message').textContent = '正在读取并保存背景…';
   try {
     const value = await prepareBackgroundImage(file); await backgroundStorage('write', value); applyBackground(value);
-    $('#background-message').textContent = '背景已保存。图片会居中铺满，GIF 会转为静态背景。'; $('#settings-status').textContent = '背景已保存';
+    $('#background-message').textContent = '背景已保存，可在“背景显示”中调整缩放方式。GIF 会转为静态背景。'; $('#settings-status').textContent = '背景已保存';
   } catch { $('#background-message').textContent = '未能保存背景。请换一张有效图片，并确认浏览器允许网站存储。'; }
   finally { setBackgroundBusy(false); }
 });

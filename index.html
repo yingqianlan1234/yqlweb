@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>启页 · 你的上网起点</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23365f91'/%3E%3Cpath d='M12 28V12h16M12 28l16-16M20 28h8v-8' stroke='white' fill='none' stroke-width='2.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=efa488cb35e4">
-  <script src="./app.js?v=932f524295ce" defer></script>
+  <link rel="stylesheet" href="./style.css?v=e968d1981f70">
+  <script src="./app.js?v=1c76de4d6c05" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -70,6 +70,7 @@
         <section class="settings-section" aria-labelledby="background-title">
           <h3 id="background-title">当前背景</h3>
           <p class="section-description">选择手机或电脑里的图片，打造自己的起始页。图片仅保存在此浏览器，不会上传。</p>
+          <label class="setting-row" for="setting-background-fit"><span><strong>背景显示</strong><small>完整显示保留全图，比例不同时会留边</small></span><select id="setting-background-fit"><option value="contain">完整显示</option><option value="cover">铺满裁切</option></select></label>
           <input id="background-file" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" tabindex="-1" aria-label="选择背景图片">
           <div id="background-preview" class="background-preview" hidden><img id="background-thumbnail" alt="当前背景预览"><span id="background-name"></span></div>
           <div class="background-actions"><button id="background-choose" class="primary-button" type="button">选择图片</button><button id="background-reset" class="text-button" type="button" disabled>恢复默认</button></div>
