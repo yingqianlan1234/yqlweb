@@ -1,4 +1,4 @@
-# 启页
+# 栖点
 
 适配手机与电脑的轻量起始页。百度、必应、Google、DuckDuckGo 可切换；输入网址直达；支持添加和删除快捷网站、深浅色切换、`/` 聚焦搜索。
 
@@ -36,3 +36,7 @@ git push https://github.com/yingqianlan1234/yqlweb.git gh-pages:gh-pages
 顶部显示本地时间、日期和星期；底部接入一言联网短句，支持点击或键盘切换；接口失败时回退本地短句。
 
 今日热点：抖音、百度、微博来源切换，每源前十条、每页五条，带对应原站链接与完整榜单入口。使用 https://uapis.cn/api/v1/misc/hotboard 无密钥访客额度，当前标签页按来源缓存五分钟；额度与可用性由提供方决定，见 https://uapis.cn/docs/api-reference/faq 。一言使用 https://v1.hitokoto.cn/，来源说明见 https://developer.hitokoto.cn/sentence/ 。搜索框聚焦时其他界面模糊，暂停视频壁纸并显示强调色光晕，退出后遵守原播放设置。搜索关键词不会发送给热榜或短句接口。
+
+首页可拖动图标排序，拖入下方删除区可移除，七秒内可撤销。名称区域保持正常跳转与滚动，键盘用户可使用设置中的管理按钮。
+
+书签连接：在设置 → 浏览器书签下载配套 Brave 扩展并解压；打开 brave://extensions，开启开发者模式，加载包含 manifest.json 的文件夹。刷新网站并连接后，可搜索、勾选书签并添加到快捷入口。扩展只在本站读取书签，不上传或修改浏览器原书签。源码位于 brave-extension/，发行包为 dist/downloads/qidian-bookmarks.zip。

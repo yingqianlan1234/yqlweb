@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "栖点 · 本地书签连接",
+  "version": "1.0.0",
+  "description": "将 Brave 书签提供给栖点起始页，在本机选择并添加为快捷入口，不上传或修改书签。",
+  "permissions": ["bookmarks"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["https://yingqianlan1234.github.io/yqlweb/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "icons": { "48": "icon48.png", "128": "icon128.png" }
+}
