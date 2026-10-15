@@ -53,8 +53,8 @@ function colorContrast(a, b) {
 }
 function applyAppearance() {
   const dark = theme === 'dark';
-  const transparency = Math.min(glassTransparency ?? (dark ? 36 : 46), dark ? 42 : 50);
-  const blur = glassBlur ?? (smallGlassScreen.matches ? 4 : 6);
+  const transparency = Math.min(glassTransparency ?? (dark ? 24 : 36), dark ? 42 : 50);
+  const blur = glassBlur ?? (smallGlassScreen.matches ? 16 : 24);
   const style = document.documentElement.style;
   if (glassBlur === null) style.removeProperty('--glass-blur'); else style.setProperty('--glass-blur', blur + 'px');
   style.setProperty('--glass-opacity', 1 - transparency / 100);
@@ -87,7 +87,6 @@ function applyAppearance() {
     style.setProperty('--accent', accentColor); style.setProperty('--custom-accent', accentColor);
     style.setProperty('--accent-text', text); style.setProperty('--soft', `rgb(${soft.join(' ')})`);
   }
-  document.dispatchEvent(new Event('appearancechange'));
 }
 $('#setting-glass-blur').addEventListener('input', event => { glassBlur = Number(event.target.value); applyAppearance(); save('glassBlur', glassBlur); });
 $('#setting-glass-transparency').addEventListener('input', event => { glassTransparency = Number(event.target.value); applyAppearance(); save('glassTransparency', glassTransparency); });

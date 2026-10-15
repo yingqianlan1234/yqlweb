@@ -8,10 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg">
-  <link rel="stylesheet" href="./style.css?v=dc763454e504">
-  <script src="./app.js?v=d0db87637b6c" defer></script>
-  <script src="./vendor/hyalite/hyalite.js?v=0.5.0" defer></script>
-  <script src="./liquid-glass.js?v=fb204e051b6e" defer></script>
+  <link rel="stylesheet" href="./style.css?v=4e921865c080">
+  <script src="./app.js?v=d7b4c699ff99" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -85,8 +83,8 @@
         </section>
         <section class="settings-section" aria-labelledby="appearance-title">
           <h3 id="appearance-title">外观</h3>
-          <p class="section-description">启用壁纸后，页面面板与设置抽屉共用折射玻璃效果，调整后即时预览。</p>
-          <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>统一调整玻璃面板背后的景物</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">6 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="6"></span></label>
+          <p class="section-description">启用壁纸后，顶部、中间与底部共用柔和玻璃效果，调整后即时预览。</p>
+          <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>统一调整三个面板背后的壁纸</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">24 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="24"></span></label>
           <label class="setting-row background-adjustment" for="setting-glass-transparency"><span><strong>面板透明度</strong><small>浅色最高 50%，深色最高 42%，文字自动适配</small></span><span class="range-control"><output id="glass-transparency-value" for="setting-glass-transparency">36%</output><input id="setting-glass-transparency" type="range" min="0" max="50" step="1" value="36"></span></label>
           <label class="setting-row" for="setting-accent-color"><span><strong>强调色</strong><small>用于按钮、选中状态与焦点提示</small></span><input id="setting-accent-color" class="color-control" type="color" value="#365f91"></label>
           <button id="appearance-reset" class="text-button" type="button">恢复默认外观</button>
