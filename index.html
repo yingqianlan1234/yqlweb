@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#f5f5f3">
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
-  <link rel="icon" href="./icons/qidian.svg?v=7fc461101fe1">
-  <link rel="stylesheet" href="./style.css?v=d268673d7398">
-  <script src="./app.js?v=363a3021852f" defer></script>
+  <link rel="icon" href="./icons/qidian.svg?v=b1e15eef43f4">
+  <link rel="stylesheet" href="./style.css?v=6715a7f3651b">
+  <script src="./app.js?v=8f1bc41d5610" defer></script>
   <script src="./search-assist.js?v=b6febdcd0a21" defer></script>
 </head>
 <body>
@@ -33,7 +33,7 @@
   <div class="shell">
       <a class="brand glass-module" href="./index.html" aria-label="栖点首页"><span class="brand-mark"><svg aria-hidden="true"><use href="#i-compass"/></svg></span><span>栖点<span class="brand-dot">.</span></span></a>
     <header class="topbar">
-      <div class="date-line wallpaper-ink"><time id="clock"></time><div class="calendar-line"><time id="date"></time><span id="weekday" class="weekday"></span></div></div>
+      <div class="date-line wallpaper-ink"><time id="clock"></time><div class="calendar-line"><time id="date"></time><span id="weekday" class="weekday"></span><span id="festival" hidden></span></div></div>
     </header>
     <div class="top-actions floating-actions glass-module" role="group" aria-label="页面设置"><button id="theme-toggle" class="icon-button" type="button" aria-label="切换到深色模式" title="切换到深色模式"><svg><use href="#i-moon"/></svg></button><button id="settings-open" class="settings-button" type="button" aria-haspopup="dialog" aria-controls="settings-dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
     <main>
@@ -42,6 +42,7 @@
           <div class="search-panel glass-module">
         <div class="intro-module"><h1 id="greeting">今天，想去哪里？</h1>
         <p class="intro">从一次搜索，到每个常去的地方。</p>
+        <p id="festival-wish" hidden></p>
         </div>
           <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-assist-list" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button><div id="search-assist" class="search-assist" hidden><div class="assist-heading"><span id="search-assist-title">搜索历史</span><button id="search-assist-clear" type="button">清空</button></div><div id="search-assist-list" role="listbox" aria-label="搜索建议"></div><p id="search-assist-status" class="assist-status" role="status"></p></div></div>
           </div>
