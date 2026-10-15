@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "栖点 · 新标签页",
+  "version": "1.0.0",
+  "description": "带搜索联想、本地搜索历史、快捷网站、热点与本地壁纸的新标签页。",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "bookmarks"
+  ],
+  "host_permissions": [
+    "https://api.bing.com/*",
+    "https://uapis.cn/*",
+    "https://v1.hitokoto.cn/*"
+  ],
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; connect-src 'self' https://api.bing.com https://uapis.cn https://v1.hitokoto.cn; img-src 'self' data: blob: https:; media-src 'self' blob:; style-src 'self' 'unsafe-inline';"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqb8ApmNsCawLqLTAhMe6FSZL24pr8EXcx4YdaBtGeUSzBdfONfvSVCEbEb18GqF827x+x7seJvpG/CXDcQ4dhAEonOiRnelRIRV6xuT7RqYBY77juPgJ1MmCosFJk8erKA8Hk7n3tdORvVcBw7UgHAAO9/yHZWo9Zl2TQJluLenYSefndx/XhyKGlOfjTXefJByvBPJj5MQCsmGDpPgnx2kru3V5OkU9NokzIcOdGyuDb4FPP6Av+N2z0U6cl3gvBfXGjWxzLq0JSnZJEJ3nyNdVzT6yWjYjvM2tnKiW8+J4KT1Xri+usjT5ZssFMjDOD/Yebd0aiO/iONtnNlWtuQIDAQAB"
+}

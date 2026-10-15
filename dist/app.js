@@ -1,4 +1,4 @@
-/* 所有偏好仅在本浏览器中保存。页面不会请求搜索建议或上传关键词。 */
+/* 偏好和搜索历史仅保存在本浏览器；开启联想时，输入内容发送给必应。 */
 const ENGINES = Object.freeze({
   baidu: { name: '百度', url: 'https://www.baidu.com/s', key: 'wd' },
   bing: { name: '必应', url: 'https://www.bing.com/search', key: 'q' },
@@ -209,10 +209,12 @@ document.addEventListener('pointerdown', event => { if (searchFocused && !search
 updateSearchHint();
 $('#search-form').addEventListener('submit', event => {
   event.preventDefault();
-  try { const target = destination($('#query').value, selectedEngine); if (target) { if (newTab) window.open(target.url, '_blank', 'noopener,noreferrer'); else window.location.assign(target.url); } }
+  if (window.QidianSearch?.isComposing()) return;
+  try { const target = destination($('#query').value, selectedEngine); if (target) { if (!target.direct) window.QidianSearch?.record($('#query').value); window.QidianSearch?.close(); if (newTab) window.open(target.url, '_blank', 'noopener,noreferrer'); else window.location.assign(target.url); } }
   catch (error) { $('#search-error').textContent = error.message; $('#search-error').hidden = false; }
 });
 document.addEventListener('keydown', event => {
+  if (event.isComposing || event.keyCode === 229) return;
   if (event.key === '/' && !$('#settings-dialog').open && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) { event.preventDefault(); $('#query').focus(); }
   if (event.key === 'Escape' && searchFocused) document.activeElement.blur();
 });
@@ -473,19 +475,24 @@ function renderBookmarks() {
 function requestBookmarks() {
   if (bookmarkRequest) return;
   const requestId = crypto.randomUUID();
-  $('#bookmarks-connect').disabled = true; $('#bookmarks-status').textContent = '正在连接本地书签扩展…';
+  $('#bookmarks-connect').disabled = true; $('#bookmarks-status').textContent = location.protocol === 'chrome-extension:' ? '正在读取本地书签…' : '正在连接本地书签扩展…';
   const timer = setTimeout(() => {
     bookmarkRequest = null; $('#bookmarks-connect').disabled = false;
     $('#bookmarks-status').textContent = '未收到扩展响应。请先安装并启用配套扩展，再刷新本页重试。';
     $('.bookmarks-help').open = true;
   }, 4000);
   bookmarkRequest = { requestId, timer };
-  window.postMessage({ channel: 'qidian-bookmarks-page', type: 'read', requestId }, location.origin);
+  if (location.protocol === 'chrome-extension:' && globalThis.chrome?.bookmarks) {
+    chrome.bookmarks.getTree().then(tree => receiveBookmarks({ type: 'tree', requestId, tree })).catch(() => receiveBookmarks({ type: 'error', requestId }));
+  } else window.postMessage({ channel: 'qidian-bookmarks-page', type: 'read', requestId }, location.origin);
 }
 window.addEventListener('message', event => {
   const message = event.data;
   if (event.source !== window || event.origin !== location.origin || message?.channel !== 'qidian-bookmarks-extension') return;
   if (message.type === 'changed') { if (bookmarksLinked) requestBookmarks(); return; }
+  receiveBookmarks(message);
+});
+function receiveBookmarks(message) {
   if (!bookmarkRequest || message.requestId !== bookmarkRequest.requestId || !['tree', 'error'].includes(message.type)) return;
   clearTimeout(bookmarkRequest.timer); bookmarkRequest = null; $('#bookmarks-connect').disabled = false;
   if (message.type === 'error' || !Array.isArray(message.tree)) { $('#bookmarks-status').textContent = '扩展无法读取书签，请检查扩展权限后重试。'; return; }
@@ -500,7 +507,7 @@ window.addEventListener('message', event => {
   bookmarkEntries = entries; bookmarkSelection = new Set([...bookmarkSelection].filter(url => seen.has(url)));
   bookmarksLinked = true; save('bookmarksConnected', true); $('#bookmarks-picker').hidden = false; $('#bookmarks-disconnect').hidden = false;
   $('#bookmarks-connect').textContent = '刷新书签'; $('#bookmarks-status').textContent = `已连接 · ${entries.length} 个网页书签，仅在本机读取`; renderBookmarks();
-});
+}
 $('#bookmarks-connect').addEventListener('click', requestBookmarks);
 $('#bookmarks-search').addEventListener('input', renderBookmarks);
 $('#bookmarks-select').addEventListener('click', () => {
@@ -524,6 +531,11 @@ $('#bookmarks-disconnect').addEventListener('click', () => {
   $('#bookmarks-connect').textContent = '连接浏览器书签'; $('#bookmarks-status').textContent = '已断开连接，已添加的快捷网站继续保留。';
 });
 window.addEventListener('load', () => { if (bookmarksLinked) setTimeout(requestBookmarks, 250); });
+if (location.protocol === 'chrome-extension:') {
+  document.querySelectorAll('[data-web-only],.bookmarks-help').forEach(element => { element.hidden = true; });
+  $('#bookmarks-status').textContent = '当前扩展可直接连接本地书签，无需安装配套扩展。';
+  window.addEventListener('focus', () => { if (bookmarksLinked) requestBookmarks(); });
+}
 const LOCAL_QUOTES = [
   '把今天留给值得的事，也留一点给自己。',
   '不必一次走很远，先把眼前这一步走好。',

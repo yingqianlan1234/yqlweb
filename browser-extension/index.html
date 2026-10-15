@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f5f5f3">
+  <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
+  <title>栖点 · 你的上网起点</title>
+  <link rel="icon" href="./icons/qidian.svg?v=7fc461101fe1">
+  <link rel="stylesheet" href="./style.css?v=6861071d854e">
+  <script src="./app.js?v=3c62dbdb2cb5" defer></script>
+  <script src="./search-assist.js?v=baf305ab7ebd" defer></script>
+</head>
+<body>
+  <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
+  <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14a8.5 8.5 0 0 1-10.5-10.5A8.5 8.5 0 1 0 20.5 14Z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 4 5 5M4 20l5-1L20 8a2 2 0 0 0-5-5L4 14Z"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M8 16 19 5M10 5h9v9M5 9v10h10"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="m9.5 3-.6 2.1-1.7 1-2.1-.5-2.5 4.3 1.5 1.6v2L2.6 15l2.5 4.3 2.1-.5 1.7 1 .6 2.2h5l.6-2.2 1.7-1 2.1.5 2.5-4.3-1.5-1.5v-2l1.5-1.6-2.5-4.3-2.1.5-1.7-1L14.5 3Z"/><circle cx="12" cy="12.5" r="3"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 10 6 6 6-6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 10a8 8 0 0 0-13.7-3.7L4 9m0-5v5h5M4 14a8 8 0 0 0 13.7 3.7L20 15m0 5v-5h-5"/></symbol>
+  </defs></svg>
+  <div class="shell">
+      <a class="brand glass-module" href="./index.html" aria-label="栖点首页"><span class="brand-mark"><svg aria-hidden="true"><use href="#i-compass"/></svg></span><span>栖点<span class="brand-dot">.</span></span></a>
+    <header class="topbar">
+      <div class="date-line wallpaper-ink"><time id="clock"></time><div class="calendar-line"><time id="date"></time><span id="weekday" class="weekday"></span></div></div>
+    </header>
+    <div class="top-actions floating-actions glass-module" role="group" aria-label="页面设置"><button id="theme-toggle" class="icon-button" type="button" aria-label="切换到深色模式" title="切换到深色模式"><svg><use href="#i-moon"/></svg></button><button id="settings-open" class="settings-button" type="button" aria-haspopup="dialog" aria-controls="settings-dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
+    <main>
+      <section class="search-section" aria-labelledby="greeting">
+        <form id="search-form" role="search">
+          <div class="search-panel glass-module">
+        <div class="intro-module"><h1 id="greeting">今天，想去哪里？</h1>
+        <p class="intro">从一次搜索，到每个常去的地方。</p>
+        </div>
+          <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-assist-list" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button><div id="search-assist" class="search-assist" hidden><div class="assist-heading"><span id="search-assist-title">搜索历史</span><button id="search-assist-clear" type="button">清空</button></div><div id="search-assist-list" role="listbox" aria-label="搜索建议"></div><p id="search-assist-status" class="assist-status" role="status"></p></div></div>
+          </div>
+          <div id="search-engine-picker" class="engine-picker glass-module">
+          <button id="engine-toggle" class="engine-toggle" type="button" aria-expanded="false" aria-controls="engine-options" title="当前使用百度"><span>搜索引擎</span><svg aria-hidden="true"><use href="#i-down"/></svg></button>
+          <fieldset id="engine-options" class="engines" inert aria-hidden="true"><legend class="sr-only">选择搜索引擎</legend><span class="engine-track" aria-hidden="true"><span class="engine-indicator"></span></span>
+            <label class="engine"><input type="radio" name="engine" value="baidu" checked><span>百度</span></label>
+            <label class="engine"><input type="radio" name="engine" value="bing"><span>必应</span></label>
+            <label class="engine"><input type="radio" name="engine" value="google"><span>Google</span></label>
+            <label class="engine"><input type="radio" name="engine" value="duckduckgo"><span>DuckDuckGo</span></label>
+          </fieldset>
+          </div>
+          <p id="search-error" class="error" role="alert" hidden></p>
+        </form>
+      </section>
+      <div class="dashboard-grid">
+      <section class="shortcuts-section glass-module" aria-labelledby="shortcuts-heading">
+        <div class="section-heading"><h2 id="shortcuts-heading">常用网站 <span id="shortcut-count"></span></h2><div class="section-actions"><button id="add-shortcut" class="text-button" type="button"><svg><use href="#i-plus"/></svg>添加</button><button id="edit-toggle" class="text-button" type="button"><svg><use href="#i-edit"/></svg><span>管理</span></button></div></div>
+        <div id="shortcuts" class="shortcuts"></div>
+        <nav class="shortcut-pagination" aria-label="常用网站分页"><button id="sites-prev" class="text-button" type="button" aria-label="常用网站上一页" title="点击翻页；拖动图标时在这里停留可跨页">上一页</button><span id="sites-page" aria-live="polite"></span><button id="sites-next" class="text-button" type="button" aria-label="常用网站下一页" title="点击翻页；拖动图标时在这里停留可跨页">下一页</button></nav>
+        <p id="empty-state" class="empty-state" hidden>还没有快捷入口，添加一个常去的网站吧。</p>
+      </section>
+      <section class="hot-section glass-module" aria-labelledby="hot-heading">
+        <div class="section-heading"><div class="hot-title-group"><h2 id="hot-heading">今日热点</h2><span id="hot-updated"></span></div></div>
+        <div class="hot-source-slot"><div class="engine-picker source-picker glass-module">
+          <button id="hot-source-toggle" class="engine-toggle" type="button" aria-expanded="false" aria-controls="hot-source-options" aria-label="热点来源：抖音，点击切换"><span>抖音</span><svg aria-hidden="true"><use href="#i-down"/></svg></button>
+          <div id="hot-source-options" class="hot-sources" role="group" aria-label="热点来源" inert aria-hidden="true"><span class="engine-track" aria-hidden="true"><span class="engine-indicator hot-indicator"></span></span><button type="button" data-hot-source="douyin" aria-pressed="true">抖音</button><button type="button" data-hot-source="baidu" aria-pressed="false">百度</button><button type="button" data-hot-source="weibo" aria-pressed="false">微博</button></div>
+        </div></div>
+        <p id="hot-status" class="hot-status" role="status">正在获取热点…</p>
+        <ol id="hot-list" class="hot-list" aria-label="热点排行，可滚动浏览" role="list" tabindex="0"></ol>
+        <div class="hot-meta"><button id="hot-refresh" class="icon-button refresh-button" type="button" aria-label="刷新当前热榜" title="刷新热榜"><svg aria-hidden="true"><use href="#i-refresh"/></svg></button><a id="hot-open" href="https://www.douyin.com/hot" target="_blank" rel="noopener noreferrer">完整榜单 <svg aria-hidden="true"><use href="#i-out"/></svg></a></div>
+      </section>
+      </div>
+    </main>
+    <footer class="quote-widget wallpaper-ink" aria-label="一言短句"><div class="quote-copy" aria-live="polite" aria-atomic="true"><p id="quote-text"></p><a id="quote-source" class="quote-source">栖点短句</a></div><button id="quote-next" class="icon-button refresh-button" type="button" aria-label="换一句" title="换一句"><svg aria-hidden="true"><use href="#i-refresh"/></svg></button></footer>
+  </div>
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="settings-panel">
+      <header class="settings-header"><div><h2 id="settings-title">设置</h2><p>把这一页，变成你的。</p></div><button id="settings-close" class="icon-button" type="button" aria-label="关闭设置" autofocus><svg><use href="#i-close"/></svg></button></header>
+      <div class="settings-content">
+        <section class="settings-section" aria-labelledby="preferences-title">
+          <h3 id="preferences-title">浏览偏好</h3>
+          <label class="setting-row" for="setting-theme"><span><strong>页面主题</strong><small>选择适合现在的明暗</small></span><select id="setting-theme"><option value="light">浅色</option><option value="dark">深色</option><option value="system">跟随系统</option></select></label>
+          <label class="setting-row" for="setting-engine"><span><strong>默认搜索引擎</strong><small>与首页的选择保持一致</small></span><select id="setting-engine"><option value="baidu">百度</option><option value="bing">必应</option><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option></select></label>
+          <label class="setting-row" for="setting-newtab"><span><strong>在新标签页打开</strong><small>搜索和网站跳转时保留栖点</small></span><input id="setting-newtab" class="switch" type="checkbox" role="switch"></label>
+          <label class="setting-row" for="setting-motion"><span><strong>界面动效</strong><small>也会遵循系统的减少动态效果设置</small></span><input id="setting-motion" class="switch" type="checkbox" role="switch" checked></label>
+        </section>
+        <section class="settings-section" aria-labelledby="search-preferences-title">
+          <h3 id="search-preferences-title">搜索与隐私</h3>
+          <label class="setting-row" for="setting-suggestions"><span><strong>搜索联想</strong><small>由必应提供；输入内容会发送给必应，搜索仍使用所选引擎</small></span><input id="setting-suggestions" class="switch" type="checkbox" role="switch" checked></label>
+          <label class="setting-row" for="setting-search-history"><span><strong>保留搜索历史</strong><small>仅在本浏览器保存最近 30 条搜索；关闭后不再记录</small></span><input id="setting-search-history" class="switch" type="checkbox" role="switch" checked></label>
+          <button id="search-history-clear" class="text-button" type="button">清空搜索历史</button>
+        </section>
+        <section class="settings-section" aria-labelledby="transfer-title">
+          <h3 id="transfer-title">数据迁移</h3>
+          <p class="section-description">在网页版与扩展之间迁移设置、快捷网站和搜索历史。文件仅在本机处理，壁纸和目录授权需重新选择。</p>
+          <div class="background-actions"><button id="preferences-export" class="text-button" type="button">导出设置</button><button id="preferences-import" class="text-button" type="button">导入设置</button></div>
+          <input id="preferences-file" class="sr-only" type="file" accept="application/json,.json" tabindex="-1" aria-label="选择设置文件">
+        </section>
+        <section class="settings-section" aria-labelledby="appearance-title">
+          <h3 id="appearance-title">外观</h3>
+          <p class="section-description">启用壁纸后，各独立模块共用柔和玻璃效果，调整后即时预览。</p>
+          <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>统一调整各模块背后的壁纸</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">24 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="24"></span></label>
+          <label class="setting-row background-adjustment" for="setting-glass-transparency"><span><strong>面板透明度</strong><small>浅色最高 50%，深色最高 42%，文字自动适配</small></span><span class="range-control"><output id="glass-transparency-value" for="setting-glass-transparency">36%</output><input id="setting-glass-transparency" type="range" min="0" max="50" step="1" value="36"></span></label>
+          <label class="setting-row" for="setting-accent-color"><span><strong>强调色</strong><small>用于按钮、选中状态与焦点提示</small></span><input id="setting-accent-color" class="color-control" type="color" value="#d97757"></label>
+          <button id="appearance-reset" class="text-button" type="button">恢复默认外观</button>
+        </section>
+        <section class="settings-section" aria-labelledby="background-title">
+          <h3 id="background-title">当前背景</h3>
+          <p class="section-description">选择手机或电脑里的图片，打造自己的起始页。图片仅保存在此浏览器，不会上传。</p>
+          <label class="setting-row" for="setting-background-fit"><span><strong>背景显示</strong><small>铺满不留边；完整显示保留全图但可能留边</small></span><select id="setting-background-fit"><option value="cover">铺满裁切</option><option value="contain">完整显示（留边）</option></select></label>
+          <label class="setting-row background-adjustment" for="setting-background-brightness"><span><strong>壁纸亮度</strong><small>只调整壁纸，不影响文字区域</small></span><span class="range-control"><output id="background-brightness-value" for="setting-background-brightness">100%</output><input id="setting-background-brightness" type="range" min="25" max="150" step="5" value="100"></span></label>
+          <label class="setting-row background-adjustment" for="setting-background-blur"><span><strong>背景模糊</strong><small>数值越低，画面越清晰</small></span><span class="range-control"><output id="background-blur-value" for="setting-background-blur">0 px</output><input id="setting-background-blur" type="range" min="0" max="12" step="1" value="0"></span></label>
+          <div id="background-video-settings" hidden>
+            <label class="setting-row" for="setting-background-playing"><span><strong>播放视频壁纸</strong><small>关闭后停留在当前画面，减少资源占用</small></span><input id="setting-background-playing" class="switch" type="checkbox" role="switch" checked></label>
+            <label class="setting-row" for="setting-background-speed"><span><strong>播放速度</strong><small>保持原生播放，倍速不代表帧率</small></span><select id="setting-background-speed"><option value="0.25">0.25 倍</option><option value="0.5">0.5 倍</option><option value="0.75">0.75 倍</option><option value="1">正常速度</option><option value="1.25">1.25 倍</option><option value="1.5">1.5 倍</option><option value="2">2 倍</option></select></label>
+            <p id="background-playback-status" class="section-description" role="status"></p>
+          </div>
+          <button id="background-parameters-reset" class="text-button" type="button">重置壁纸参数</button>
+          <input id="background-file" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" tabindex="-1" aria-label="选择背景图片">
+          <div id="background-preview" class="background-preview" hidden><img id="background-thumbnail" alt="当前背景预览"><span id="background-name"></span></div>
+          <div class="background-actions"><button id="background-choose" class="primary-button" type="button">选择图片</button><button id="background-reset" class="text-button" type="button" disabled>恢复默认</button></div>
+          <p id="background-message" class="section-description background-message" role="status">支持 JPG、PNG、WebP、AVIF 和 GIF，最大 20 MB。</p>
+        </section>
+        <section class="settings-section" aria-labelledby="library-title">
+          <h3 id="library-title">Wallpaper Engine 壁纸库</h3>
+          <p class="section-description">选择本地壁纸文件夹，搜索后点击切换。视频直接播放；场景和网页壁纸使用预览图。</p>
+          <p class="library-path-hint">常见目录：Steam 库 / steamapps / workshop / content / 431960，也可以选择单个壁纸项目文件夹。</p>
+          <input id="library-folder" class="sr-only" type="file" webkitdirectory multiple tabindex="-1" aria-label="选择 Wallpaper Engine 壁纸文件夹">
+          <div class="background-actions"><button id="library-choose" class="primary-button" type="button">选择壁纸文件夹</button><button id="library-reconnect" class="text-button" type="button" hidden>授权已保存目录</button><button id="library-forget" class="text-button" type="button" hidden>忘记目录</button></div>
+          <p id="library-directory-name" class="library-path-hint" hidden></p>
+          <label class="library-search" for="library-search"><span class="sr-only">搜索壁纸名称或文件夹编号</span><input id="library-search" type="search" placeholder="搜索壁纸名称或编号" disabled></label>
+          <p id="library-status" class="section-description" role="status">文件只在本机读取，不会上传。支持的浏览器可记住目录；权限失效时点一次授权即可继续。</p>
+          <p id="library-brave-help" class="library-path-hint" hidden>Brave 用户：在地址栏打开 <code>brave://flags/#file-system-access-api</code>，将 File System Access API 设为 Enabled，手动重启浏览器后即可使用记住目录功能。</p>
+          <div id="library-results" class="library-results" aria-label="本地壁纸列表"></div>
+        </section>
+        <section id="manage-sites" class="settings-section" aria-labelledby="manage-title">
+          <div class="section-heading"><h3 id="manage-title">快捷网站</h3><span id="manage-count" class="count-label"></span></div>
+          <p class="section-description">首页可拖动图标排序，拖到下方移除；也可在这里用按钮管理。</p>
+          <div id="site-manager" class="site-manager"></div>
+          <p id="manager-empty" class="empty-state" hidden>列表还是空的，从下面添加第一个网站。</p>
+          <details id="add-panel"><summary><svg><use href="#i-plus"/></svg><span id="form-title">添加网站</span></summary><form id="add-form"><div class="add-fields"><label>网站名称<input id="site-name" maxlength="24" placeholder="例如：我的博客" required></label><label>网站地址<input id="site-url" type="text" inputmode="url" placeholder="例如：example.com" required></label><div class="form-actions"><button type="button" id="cancel-edit" class="text-button" hidden>取消编辑</button><button type="submit" class="primary-button">添加网站</button></div></div><p id="add-error" class="error" role="alert" hidden></p></form></details>
+        </section>
+        <section class="settings-section" aria-labelledby="bookmarks-title">
+          <h3 id="bookmarks-title">浏览器书签</h3>
+          <p class="section-description">安装配套扩展后连接 Brave 书签。勾选添加为快捷入口；首页排序或移除不会修改浏览器原书签。</p>
+          <div class="background-actions"><button id="bookmarks-connect" class="primary-button" type="button">连接浏览器书签</button><a class="text-button" href="./downloads/qidian-bookmarks.zip" data-web-only download>下载书签连接扩展</a><a class="text-button" href="./downloads/qidian-newtab.zip" data-web-only download>下载新标签页扩展</a><button id="bookmarks-disconnect" class="text-button" type="button" hidden>断开连接</button></div>
+          <details class="bookmarks-help"><summary>首次安装说明</summary><p class="section-description">下载并解压扩展，在 Brave 地址栏打开 <code>brave://extensions</code>，开启“开发者模式”，点击“加载已解压的扩展程序”，选择解压后的文件夹。刷新本页，再点击连接。</p></details>
+          <p id="bookmarks-status" class="section-description" role="status">尚未连接，仅在本机读取，不上传书签。</p>
+          <div id="bookmarks-picker" hidden>
+            <label class="library-search" for="bookmarks-search"><span class="sr-only">搜索书签名称、网址或文件夹</span><input id="bookmarks-search" type="search" placeholder="搜索书签名称、网址或文件夹"></label>
+            <div class="bookmarks-toolbar"><button id="bookmarks-select" class="text-button" type="button">全选当前结果</button><span id="bookmarks-count" class="count-label"></span></div>
+            <div id="bookmarks-list" class="bookmarks-list" aria-label="可添加的浏览器书签"></div>
+            <button id="bookmarks-add" class="primary-button" type="button" disabled>添加到快捷网站</button>
+          </div>
+        </section>
+        <p class="settings-note">更改即时生效并自动保存。手机与电脑的设置各自独立，不会上传你的快捷网站。</p>
+      </div>
+      <footer class="settings-bottom"><span id="settings-status" role="status">更改会自动保存</span><button id="settings-done" class="primary-button" type="button">完成</button></footer>
+    </div>
+  </dialog>
+  <div id="notice" class="notice" role="status" hidden></div>
+  <div id="shortcut-dropzone" class="shortcut-dropzone" hidden><svg aria-hidden="true"><use href="#i-trash"/></svg><span>拖到这里移除</span></div>
+</body>
+</html>

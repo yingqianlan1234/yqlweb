@@ -8,8 +8,9 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg?v=7fc461101fe1">
-  <link rel="stylesheet" href="./style.css?v=e5b0e92ba2a1">
-  <script src="./app.js?v=f9ca88b71fbf" defer></script>
+  <link rel="stylesheet" href="./style.css?v=6861071d854e">
+  <script src="./app.js?v=3c62dbdb2cb5" defer></script>
+  <script src="./search-assist.js?v=baf305ab7ebd" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -30,7 +31,7 @@
     <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 10a8 8 0 0 0-13.7-3.7L4 9m0-5v5h5M4 14a8 8 0 0 0 13.7 3.7L20 15m0 5v-5h-5"/></symbol>
   </defs></svg>
   <div class="shell">
-      <a class="brand glass-module" href="./" aria-label="栖点首页"><span class="brand-mark"><svg aria-hidden="true"><use href="#i-compass"/></svg></span><span>栖点<span class="brand-dot">.</span></span></a>
+      <a class="brand glass-module" href="./index.html" aria-label="栖点首页"><span class="brand-mark"><svg aria-hidden="true"><use href="#i-compass"/></svg></span><span>栖点<span class="brand-dot">.</span></span></a>
     <header class="topbar">
       <div class="date-line wallpaper-ink"><time id="clock"></time><div class="calendar-line"><time id="date"></time><span id="weekday" class="weekday"></span></div></div>
     </header>
@@ -42,7 +43,7 @@
         <div class="intro-module"><h1 id="greeting">今天，想去哪里？</h1>
         <p class="intro">从一次搜索，到每个常去的地方。</p>
         </div>
-          <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button></div>
+          <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-assist-list" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button><div id="search-assist" class="search-assist" hidden><div class="assist-heading"><span id="search-assist-title">搜索历史</span><button id="search-assist-clear" type="button">清空</button></div><div id="search-assist-list" role="listbox" aria-label="搜索建议"></div><p id="search-assist-status" class="assist-status" role="status"></p></div></div>
           </div>
           <div id="search-engine-picker" class="engine-picker glass-module">
           <button id="engine-toggle" class="engine-toggle" type="button" aria-expanded="false" aria-controls="engine-options" title="当前使用百度"><span>搜索引擎</span><svg aria-hidden="true"><use href="#i-down"/></svg></button>
@@ -87,6 +88,18 @@
           <label class="setting-row" for="setting-engine"><span><strong>默认搜索引擎</strong><small>与首页的选择保持一致</small></span><select id="setting-engine"><option value="baidu">百度</option><option value="bing">必应</option><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option></select></label>
           <label class="setting-row" for="setting-newtab"><span><strong>在新标签页打开</strong><small>搜索和网站跳转时保留栖点</small></span><input id="setting-newtab" class="switch" type="checkbox" role="switch"></label>
           <label class="setting-row" for="setting-motion"><span><strong>界面动效</strong><small>也会遵循系统的减少动态效果设置</small></span><input id="setting-motion" class="switch" type="checkbox" role="switch" checked></label>
+        </section>
+        <section class="settings-section" aria-labelledby="search-preferences-title">
+          <h3 id="search-preferences-title">搜索与隐私</h3>
+          <label class="setting-row" for="setting-suggestions"><span><strong>搜索联想</strong><small>由必应提供；输入内容会发送给必应，搜索仍使用所选引擎</small></span><input id="setting-suggestions" class="switch" type="checkbox" role="switch" checked></label>
+          <label class="setting-row" for="setting-search-history"><span><strong>保留搜索历史</strong><small>仅在本浏览器保存最近 30 条搜索；关闭后不再记录</small></span><input id="setting-search-history" class="switch" type="checkbox" role="switch" checked></label>
+          <button id="search-history-clear" class="text-button" type="button">清空搜索历史</button>
+        </section>
+        <section class="settings-section" aria-labelledby="transfer-title">
+          <h3 id="transfer-title">数据迁移</h3>
+          <p class="section-description">在网页版与扩展之间迁移设置、快捷网站和搜索历史。文件仅在本机处理，壁纸和目录授权需重新选择。</p>
+          <div class="background-actions"><button id="preferences-export" class="text-button" type="button">导出设置</button><button id="preferences-import" class="text-button" type="button">导入设置</button></div>
+          <input id="preferences-file" class="sr-only" type="file" accept="application/json,.json" tabindex="-1" aria-label="选择设置文件">
         </section>
         <section class="settings-section" aria-labelledby="appearance-title">
           <h3 id="appearance-title">外观</h3>
@@ -135,7 +148,7 @@
         <section class="settings-section" aria-labelledby="bookmarks-title">
           <h3 id="bookmarks-title">浏览器书签</h3>
           <p class="section-description">安装配套扩展后连接 Brave 书签。勾选添加为快捷入口；首页排序或移除不会修改浏览器原书签。</p>
-          <div class="background-actions"><button id="bookmarks-connect" class="primary-button" type="button">连接浏览器书签</button><a class="text-button" href="./downloads/qidian-bookmarks.zip" download>下载配套扩展</a><button id="bookmarks-disconnect" class="text-button" type="button" hidden>断开连接</button></div>
+          <div class="background-actions"><button id="bookmarks-connect" class="primary-button" type="button">连接浏览器书签</button><a class="text-button" href="./downloads/qidian-bookmarks.zip" data-web-only download>下载书签连接扩展</a><a class="text-button" href="./downloads/qidian-newtab.zip" data-web-only download>下载新标签页扩展</a><button id="bookmarks-disconnect" class="text-button" type="button" hidden>断开连接</button></div>
           <details class="bookmarks-help"><summary>首次安装说明</summary><p class="section-description">下载并解压扩展，在 Brave 地址栏打开 <code>brave://extensions</code>，开启“开发者模式”，点击“加载已解压的扩展程序”，选择解压后的文件夹。刷新本页，再点击连接。</p></details>
           <p id="bookmarks-status" class="section-description" role="status">尚未连接，仅在本机读取，不上传书签。</p>
           <div id="bookmarks-picker" hidden>
