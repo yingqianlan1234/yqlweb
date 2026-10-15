@@ -136,3 +136,10 @@ body:not(.has-background) .search-box::before{background:var(--surface)}
 @media(max-width:600px){.shell>.brand{top:22px;left:20px}.search-focused .shell>.brand{filter:blur(4px)}.topbar{grid-template-rows:44px 58px}#clock{font-size:38px}.has-background .search-box{border-radius:20px}.shell>.quote-widget,.has-background .shell>.quote-widget{max-width:100%;gap:6px}#quote-text{font-size:12px}.quote-source{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.search-submit:hover,.refresh-button:hover svg{transform:none}}
 [data-motion=off] .search-submit:hover,[data-motion=off] .refresh-button:hover svg{transform:none}
+/* 一言固定在窗口底部，正文与出处横排。 */
+.shell,.has-background .shell{padding-bottom:64px}
+.shell>.quote-widget,.has-background .shell>.quote-widget{position:fixed;left:24px;bottom:max(8px,env(safe-area-inset-bottom));z-index:12;width:fit-content;max-width:calc(100% - 48px);margin:0;padding:0;gap:8px;border:0}
+.quote-copy{display:flex;align-items:baseline;gap:10px;min-width:0}
+#quote-text{min-width:0;max-width:900px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quote-source{max-width:240px;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:600px){.shell>.quote-widget,.has-background .shell>.quote-widget{left:16px;max-width:calc(100% - 32px);gap:4px}.quote-copy{gap:6px}.quote-source{max-width:90px;flex-shrink:0}#quote-text{flex:1}}
