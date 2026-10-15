@@ -22,6 +22,7 @@ const SITE_ICONS = Object.freeze({
   'chatgpt.com': 'chatgpt.ico', 'chat.deepseek.com': 'deepseek.svg'
 });
 const $ = (selector) => document.querySelector(selector);
+let searchFocused = false;
 function read(key, fallback) {
   try { const v = localStorage.getItem('yql.' + key); return v === null ? fallback : JSON.parse(v); }
   catch { return fallback; }
@@ -169,6 +170,14 @@ function updateSearchHint() {
   $('#search-error').hidden = true;
 }
 $('#query').addEventListener('input', updateSearchHint);
+const searchBox = $('.search-box');
+function setSearchFocused(value) {
+  if (value === searchFocused) return;
+  searchFocused = value; document.body.classList.toggle('search-focused', value); syncBackgroundPlayback();
+}
+searchBox.addEventListener('focusin', () => setSearchFocused(true));
+searchBox.addEventListener('focusout', () => queueMicrotask(() => { if (!searchBox.contains(document.activeElement)) setSearchFocused(false); }));
+document.addEventListener('pointerdown', event => { if (searchFocused && !searchBox.contains(event.target)) document.activeElement.blur(); });
 updateSearchHint();
 $('#search-form').addEventListener('submit', event => {
   event.preventDefault();
@@ -177,7 +186,7 @@ $('#search-form').addEventListener('submit', event => {
 });
 document.addEventListener('keydown', event => {
   if (event.key === '/' && !$('#settings-dialog').open && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) { event.preventDefault(); $('#query').focus(); }
-  if (event.key === 'Escape' && document.activeElement === $('#query')) $('#query').blur();
+  if (event.key === 'Escape' && searchFocused) document.activeElement.blur();
 });
 let sites = read('sites', DEFAULT_SITES);
 if (!Array.isArray(sites)) sites = DEFAULT_SITES;
@@ -300,13 +309,99 @@ function updateDate() {
   if (quoteDate !== $('#date').dateTime) {
     quoteDate = $('#date').dateTime;
     quoteIndex = (now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) % LOCAL_QUOTES.length;
-    $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex];
+    if (!$('#quote-text').dataset.online) $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex];
   }
   clearTimeout(dateTimer); dateTimer = setTimeout(updateDate, 60000 - now.getSeconds() * 1000 - now.getMilliseconds() + 20);
 }
 updateDate();
 document.addEventListener('visibilitychange', () => { if (!document.hidden) updateDate(); });
-$('#quote-next').addEventListener('click', () => { quoteIndex = (quoteIndex + 1) % LOCAL_QUOTES.length; $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex]; });
+async function fetchPublicJson(url) {
+  const response = await fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(15000) });
+  if (!response.ok) throw new Error('数据源暂不可用');
+  return response.json();
+}
+async function loadOnlineQuote() {
+  const button = $('#quote-next'); if (button.disabled) return;
+  button.disabled = true; button.setAttribute('aria-busy', 'true'); const started = Date.now();
+  try {
+    const data = await fetchPublicJson('https://v1.hitokoto.cn/?max_length=60');
+    if (typeof data.hitokoto !== 'string' || !data.hitokoto.trim() || data.hitokoto.length > 200) throw new Error('短句无效');
+    $('#quote-text').textContent = data.hitokoto; $('#quote-text').dataset.online = 'true';
+    const source = [data.from_who, data.from].filter(value => typeof value === 'string' && value.trim()).map(value => value.trim().slice(0, 100));
+    $('#quote-source').textContent = [...source, '一言'].join(' · ');
+    $('#quote-source').href = typeof data.uuid === 'string' && /^[\da-f-]{36}$/i.test(data.uuid) ? 'https://hitokoto.cn/?uuid=' + data.uuid : 'https://hitokoto.cn/';
+    $('#quote-source').target = '_blank'; $('#quote-source').rel = 'noopener noreferrer';
+  } catch {
+    quoteIndex = (quoteIndex + 1) % LOCAL_QUOTES.length;
+    $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex]; delete $('#quote-text').dataset.online;
+    $('#quote-source').textContent = '启页短句 · 联网暂不可用'; $('#quote-source').removeAttribute('href');
+  } finally {
+    // 一言文档限制 2 QPS，避免快速连点触发上游限流。
+    setTimeout(() => { button.disabled = false; button.removeAttribute('aria-busy'); }, Math.max(0, 600 - (Date.now() - started)));
+  }
+}
+$('#quote-next').addEventListener('click', loadOnlineQuote);
+loadOnlineQuote();
+
+const HOT_SOURCES = {
+  douyin: { name: '抖音', board: 'https://www.douyin.com/hot', host: 'douyin.com', search: 'https://www.douyin.com/search/' },
+  baidu: { name: '百度', board: 'https://top.baidu.com/board?tab=realtime', host: 'baidu.com', search: 'https://www.baidu.com/s?wd=' },
+  weibo: { name: '微博', board: 'https://s.weibo.com/top/summary?cate=realtimehot', host: 'weibo.com', search: 'https://s.weibo.com/weibo?q=' }
+};
+let hotSource = read('hotSource', 'douyin'); if (!Object.hasOwn(HOT_SOURCES, hotSource)) hotSource = 'douyin';
+let hotItems = []; let hotPage = 0; let hotVersion = 0;
+const hotPending = new Map();
+function normalizeHot(source, data) {
+  if (!Array.isArray(data.list)) throw new Error('榜单格式无效');
+  return data.list.filter(item => item && typeof item.title === 'string' && item.title.trim()).slice(0, 10).map(item => {
+    const title = item.title.trim().slice(0, 200); const provider = HOT_SOURCES[source]; const url = typeof item.url === 'string' ? websiteUrl(item.url) : null;
+    const safe = url && (url.hostname === provider.host || url.hostname.endsWith('.' + provider.host));
+    return { title, url: safe ? url.href : provider.search + encodeURIComponent(title) };
+  });
+}
+function renderHot() {
+  $('#hot-list').replaceChildren(); $('#hot-list').start = hotPage * 5 + 1;
+  for (const [index, item] of hotItems.slice(hotPage * 5, hotPage * 5 + 5).entries()) {
+    const row = document.createElement('li'); const link = document.createElement('a'); link.className = 'hot-link'; link.href = item.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.title = item.title;
+    const rank = document.createElement('span'); rank.className = 'hot-rank'; rank.textContent = hotPage * 5 + index + 1; rank.setAttribute('aria-hidden', 'true');
+    const title = document.createElement('span'); title.className = 'hot-title'; title.textContent = item.title;
+    link.append(rank, title); row.append(link); $('#hot-list').append(row);
+  }
+  $('#hot-prev').disabled = hotPage === 0; $('#hot-next').disabled = hotPage === 1 || hotItems.length <= 5;
+  $('#hot-page').textContent = hotItems.length ? `${hotPage + 1} / ${Math.ceil(hotItems.length / 5)}` : '— / —';
+}
+async function loadHot(source, force = false) {
+  const version = ++hotVersion; hotSource = source; hotPage = 0; hotItems = [];
+  document.querySelectorAll('[data-hot-source]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.hotSource === source)));
+  $('#hot-open').href = HOT_SOURCES[source].board; $('#hot-list').setAttribute('aria-label', HOT_SOURCES[source].name + '热点排行');
+  $('#hot-updated').textContent = ''; $('#hot-status').textContent = '正在获取' + HOT_SOURCES[source].name + '热点…'; $('#hot-refresh').disabled = true;
+  let cached;
+  try { cached = JSON.parse(sessionStorage.getItem('yql.hot.' + source)); if (cached && Array.isArray(cached.data?.list)) { hotItems = normalizeHot(source, cached.data); } else cached = null; } catch { cached = null; }
+  renderHot();
+  try {
+    const age = cached ? Date.now() - cached.at : Infinity;
+    let data = cached && !force && age >= 0 && age < 300000 ? cached.data : null;
+    if (!data) {
+      if (!hotPending.has(source)) hotPending.set(source, fetchPublicJson('https://uapis.cn/api/v1/misc/hotboard?type=' + source).finally(() => hotPending.delete(source)));
+      data = await hotPending.get(source);
+      const items = normalizeHot(source, data); if (!items.length) throw new Error('榜单暂无内容');
+      try { sessionStorage.setItem('yql.hot.' + source, JSON.stringify({ at: Date.now(), data: { list: items, update_time: data.update_time } })); } catch {}
+    }
+    if (version !== hotVersion) return;
+    hotItems = normalizeHot(source, data); if (!hotItems.length) throw new Error('榜单暂无内容');
+    const updated = new Date(data.update_time);
+    $('#hot-updated').textContent = Number.isFinite(updated.getTime()) ? '更新于 ' + new Intl.DateTimeFormat('zh-CN', { month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23' }).format(updated) : '';
+    $('#hot-status').textContent = `前 ${hotItems.length} 条 · 每页 5 条`; renderHot();
+  } catch {
+    if (version !== hotVersion) return;
+    $('#hot-status').textContent = hotItems.length ? '暂时无法刷新，显示上次获取的榜单' : '暂时无法获取，点击刷新重试或查看完整榜单'; renderHot();
+  } finally { if (version === hotVersion) $('#hot-refresh').disabled = false; }
+}
+document.querySelectorAll('[data-hot-source]').forEach(button => button.addEventListener('click', () => { save('hotSource', button.dataset.hotSource); loadHot(button.dataset.hotSource); }));
+$('#hot-refresh').addEventListener('click', () => loadHot(hotSource, true));
+$('#hot-prev').addEventListener('click', () => { hotPage = 0; renderHot(); });
+$('#hot-next').addEventListener('click', () => { hotPage = 1; renderHot(); });
+loadHot(hotSource);
 
 // 背景 Blob 和已授权的目录句柄保存在 IndexedDB，彼此使用独立键。
 function backgroundStorage(action, value, key = 'custom') {
@@ -433,7 +528,7 @@ function syncBackgroundPlayback() {
     unloadBackgroundVideo(); $('#background-playback-status').textContent = '页面位于后台，已卸载视频；返回后自动恢复。'; return;
   }
   if (!video.getAttribute('src')) { restoreBackgroundVideo(); return; }
-  const reason = !backgroundPlaying ? '已手动暂停，保留当前画面。' : !motionEnabled ? '界面动效已关闭，视频暂停。' : reducedBackgroundMotion.matches ? '系统已开启减少动态效果，视频暂停。' : '';
+  const reason = searchFocused ? '搜索专注模式，视频暂时暂停。' : !backgroundPlaying ? '已手动暂停，保留当前画面。' : !motionEnabled ? '界面动效已关闭，视频暂停。' : reducedBackgroundMotion.matches ? '系统已开启减少动态效果，视频暂停。' : '';
   $('#background-playback-status').textContent = reason || '原生视频播放中，静音循环；后台会卸载视频，返回后恢复。';
   if (reason) video.pause();
   else {
