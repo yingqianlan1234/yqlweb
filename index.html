@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg?v=7fc461101fe1">
-  <link rel="stylesheet" href="./style.css?v=727c0afc36a7">
-  <script src="./app.js?v=5b4ab42b10e5" defer></script>
+  <link rel="stylesheet" href="./style.css?v=f3b89fef5de2">
+  <script src="./app.js?v=6c705320dd47" defer></script>
   <script src="./search-assist.js?v=b6febdcd0a21" defer></script>
 </head>
 <body>
@@ -81,35 +81,25 @@
   </div>
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <div class="settings-panel">
-      <header class="settings-header"><div><h2 id="settings-title">设置</h2><p>把这一页，变成你的。</p></div><button id="settings-close" class="icon-button" type="button" aria-label="关闭设置" autofocus><svg><use href="#i-close"/></svg></button></header>
+      <header class="settings-header"><div><h2 id="settings-title">设置</h2><p id="settings-subtitle">主题、色彩与界面动效</p></div><button id="settings-close" class="icon-button" type="button" aria-label="关闭设置" autofocus><svg><use href="#i-close"/></svg></button></header>
+      <nav class="settings-nav" role="tablist" aria-label="设置分类"><button id="settings-tab-appearance" type="button" role="tab" data-settings-tab="appearance" aria-controls="settings-category-appearance" aria-selected="true" tabindex="0">外观</button><button id="settings-tab-wallpaper" type="button" role="tab" data-settings-tab="wallpaper" aria-controls="settings-category-wallpaper" aria-selected="false" tabindex="-1">壁纸</button><button id="settings-tab-search" type="button" role="tab" data-settings-tab="search" aria-controls="settings-category-search" aria-selected="false" tabindex="-1">搜索</button><button id="settings-tab-sites" type="button" role="tab" data-settings-tab="sites" aria-controls="settings-category-sites" aria-selected="false" tabindex="-1">网站</button><button id="settings-tab-data" type="button" role="tab" data-settings-tab="data" aria-controls="settings-category-data" aria-selected="false" tabindex="-1">数据</button></nav>
       <div class="settings-content">
+        <div id="settings-category-appearance" class="settings-category-panel" role="tabpanel" aria-labelledby="settings-tab-appearance">
         <section class="settings-section" aria-labelledby="preferences-title">
-          <h3 id="preferences-title">浏览偏好</h3>
+          <h3 id="preferences-title">主题与动效</h3>
           <label class="setting-row" for="setting-theme"><span><strong>页面主题</strong><small>选择适合现在的明暗</small></span><select id="setting-theme"><option value="light">浅色</option><option value="dark">深色</option><option value="system">跟随系统</option></select></label>
-          <label class="setting-row" for="setting-engine"><span><strong>默认搜索引擎</strong><small>与首页的选择保持一致</small></span><select id="setting-engine"><option value="baidu">百度</option><option value="bing">必应</option><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option></select></label>
-          <label class="setting-row" for="setting-newtab"><span><strong>在新标签页打开</strong><small>搜索和网站跳转时保留栖点</small></span><input id="setting-newtab" class="switch" type="checkbox" role="switch"></label>
           <label class="setting-row" for="setting-motion"><span><strong>界面动效</strong><small>也会遵循系统的减少动态效果设置</small></span><input id="setting-motion" class="switch" type="checkbox" role="switch" checked></label>
         </section>
-        <section class="settings-section" aria-labelledby="search-preferences-title">
-          <h3 id="search-preferences-title">搜索与隐私</h3>
-          <label class="setting-row" for="setting-suggestions"><span><strong>搜索联想</strong><small>由必应提供；输入内容会发送给必应，搜索仍使用所选引擎</small></span><input id="setting-suggestions" class="switch" type="checkbox" role="switch" checked></label>
-          <label class="setting-row" for="setting-search-history"><span><strong>保留搜索历史</strong><small>仅在本浏览器保存最近 30 条搜索；关闭后不再记录</small></span><input id="setting-search-history" class="switch" type="checkbox" role="switch" checked></label>
-          <button id="search-history-clear" class="text-button" type="button">清空搜索历史</button>
-        </section>
-        <section class="settings-section" aria-labelledby="transfer-title">
-          <h3 id="transfer-title">数据迁移</h3>
-          <p class="section-description">在网页版与扩展之间迁移设置、快捷网站和搜索历史。文件仅在本机处理，壁纸和目录授权需重新选择。</p>
-          <div class="background-actions"><button id="preferences-export" class="text-button" type="button">导出设置</button><button id="preferences-import" class="text-button" type="button">导入设置</button></div>
-          <input id="preferences-file" class="sr-only" type="file" accept="application/json,.json" tabindex="-1" aria-label="选择设置文件">
-        </section>
         <section class="settings-section" aria-labelledby="appearance-title">
-          <h3 id="appearance-title">外观</h3>
+          <h3 id="appearance-title">色彩与玻璃</h3>
           <p class="section-description">启用壁纸后，各独立模块共用柔和玻璃效果，调整后即时预览。</p>
           <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>统一调整各模块背后的壁纸</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">24 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="24"></span></label>
           <label class="setting-row background-adjustment" for="setting-glass-transparency"><span><strong>面板透明度</strong><small>浅色最高 50%，深色最高 42%，文字自动适配</small></span><span class="range-control"><output id="glass-transparency-value" for="setting-glass-transparency">36%</output><input id="setting-glass-transparency" type="range" min="0" max="50" step="1" value="36"></span></label>
           <label class="setting-row" for="setting-accent-color"><span><strong>强调色</strong><small>用于按钮、选中状态与焦点提示</small></span><input id="setting-accent-color" class="color-control" type="color" value="#d97757"></label>
           <button id="appearance-reset" class="text-button" type="button">恢复默认外观</button>
         </section>
+        </div>
+        <div id="settings-category-wallpaper" class="settings-category-panel" role="tabpanel" aria-labelledby="settings-tab-wallpaper" hidden>
         <section class="settings-section" aria-labelledby="background-title">
           <h3 id="background-title">当前背景</h3>
           <p class="section-description">选择手机或电脑里的图片，打造自己的起始页。图片仅保存在此浏览器，不会上传。</p>
@@ -139,13 +129,26 @@
           <p id="library-brave-help" class="library-path-hint" hidden>Brave 用户：在地址栏打开 <code>brave://flags/#file-system-access-api</code>，将 File System Access API 设为 Enabled，手动重启浏览器后即可使用记住目录功能。</p>
           <div id="library-results" class="library-results" aria-label="本地壁纸列表"></div>
         </section>
-        <section id="manage-sites" class="settings-section" aria-labelledby="manage-title">
-          <div class="section-heading"><h3 id="manage-title">快捷网站</h3><span id="manage-count" class="count-label"></span></div>
-          <p class="section-description">首页可拖动图标排序，拖到下方移除；也可在这里用按钮管理。</p>
+        </div>
+        <div id="settings-category-search" class="settings-category-panel" role="tabpanel" aria-labelledby="settings-tab-search" hidden>
+        <section class="settings-section" aria-labelledby="search-preferences-title">
+          <h3 id="search-preferences-title">搜索与隐私</h3>
+          <label class="setting-row" for="setting-newtab"><span><strong>在新标签页打开</strong><small>搜索和网站跳转时保留栖点</small></span><input id="setting-newtab" class="switch" type="checkbox" role="switch"></label>
+          <label class="setting-row" for="setting-engine"><span><strong>默认搜索引擎</strong><small>与首页的选择保持一致</small></span><select id="setting-engine"><option value="baidu">百度</option><option value="bing">必应</option><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option></select></label>
+          <label class="setting-row" for="setting-suggestions"><span><strong>搜索联想</strong><small>由必应提供；输入内容会发送给必应，搜索仍使用所选引擎</small></span><input id="setting-suggestions" class="switch" type="checkbox" role="switch" checked></label>
+          <label class="setting-row" for="setting-search-history"><span><strong>保留搜索历史</strong><small>仅在本浏览器保存最近 30 条搜索；关闭后不再记录</small></span><input id="setting-search-history" class="switch" type="checkbox" role="switch" checked></label>
+          <button id="search-history-clear" class="text-button" type="button">清空搜索历史</button>
+        </section>
+        </div>
+        <div id="settings-category-sites" class="settings-category-panel" role="tabpanel" aria-labelledby="settings-tab-sites" hidden>
+          <button id="settings-add-site" class="primary-button settings-add-site" type="button">添加网站</button>
+        <details id="manage-sites" class="settings-section" aria-labelledby="manage-title">
+          <summary class="manage-summary"><h3 id="manage-title">快捷网站</h3><span id="manage-count" class="count-label"></span><svg aria-hidden="true"><use href="#i-down"/></svg></summary>
+          <p class="section-description">直接选择每个网站的分类，即选即保存；首页也可拖动图标跨分类整理。</p>
           <div id="site-manager" class="site-manager"></div>
           <p id="manager-empty" class="empty-state" hidden>列表还是空的，从下面添加第一个网站。</p>
-          <details id="add-panel"><summary><svg><use href="#i-plus"/></svg><span id="form-title">添加网站</span></summary><form id="add-form"><div class="add-fields"><label>网站名称<input id="site-name" maxlength="24" placeholder="例如：我的博客" required></label><label>网站地址<input id="site-url" type="text" inputmode="url" placeholder="例如：example.com" required></label><label>分类<input id="site-category" list="site-category-list" maxlength="24" placeholder="选择已有分类，或输入新分类"><datalist id="site-category-list"></datalist></label><div class="form-actions"><button type="button" id="cancel-edit" class="text-button" hidden>取消编辑</button><button type="submit" class="primary-button">添加网站</button></div></div><p id="add-error" class="error" role="alert" hidden></p></form></details>
-        </section>
+          <details id="add-panel"><summary><svg><use href="#i-plus"/></svg><span id="form-title">添加网站</span></summary><form id="add-form"><div class="add-fields"><label>网站名称<input id="site-name" maxlength="24" placeholder="例如：我的博客" required></label><label>网站地址<input id="site-url" type="text" inputmode="url" placeholder="例如：example.com" required></label><label>分类<select id="site-category"><option value="">未分类</option></select></label><label id="new-category-field" hidden>新分类名称<input id="new-category-name" maxlength="24" placeholder="例如：设计资料"></label><div class="form-actions"><button type="button" id="cancel-edit" class="text-button" hidden>取消编辑</button><button type="submit" class="primary-button">添加网站</button></div></div><p id="add-error" class="error" role="alert" hidden></p></form></details>
+        </details>
         <section class="settings-section" aria-labelledby="bookmarks-title">
           <h3 id="bookmarks-title">浏览器书签</h3>
           <p class="section-description">安装配套扩展后连接 Brave 书签。勾选添加为快捷入口；首页排序或移除不会修改浏览器原书签。</p>
@@ -159,6 +162,15 @@
             <button id="bookmarks-add" class="primary-button" type="button" disabled>添加到快捷网站</button>
           </div>
         </section>
+        </div>
+        <div id="settings-category-data" class="settings-category-panel" role="tabpanel" aria-labelledby="settings-tab-data" hidden>
+        <section class="settings-section" aria-labelledby="transfer-title">
+          <h3 id="transfer-title">数据迁移</h3>
+          <p class="section-description">在网页版与扩展之间迁移设置、快捷网站和搜索历史。文件仅在本机处理，壁纸和目录授权需重新选择。</p>
+          <div class="background-actions"><button id="preferences-export" class="text-button" type="button">导出设置</button><button id="preferences-import" class="text-button" type="button">导入设置</button></div>
+          <input id="preferences-file" class="sr-only" type="file" accept="application/json,.json" tabindex="-1" aria-label="选择设置文件">
+        </section>
+        </div>
         <p class="settings-note">更改即时生效并自动保存。手机与电脑的设置各自独立，不会上传你的快捷网站。</p>
       </div>
       <footer class="settings-bottom"><span id="settings-status" role="status">更改会自动保存</span><button id="settings-done" class="primary-button" type="button">完成</button></footer>

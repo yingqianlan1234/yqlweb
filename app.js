@@ -225,6 +225,18 @@ const SITES_PER_PAGE = 10;
 let sitesPage = 0;
 let shortcutDrag = null;
 const siteCategory = site => typeof site.category === 'string' ? site.category.trim().slice(0, 24) : '';
+const CATEGORY_PRESETS = ['工作', '学习', '娱乐', '工具', '社交', '生活'];
+function fillSiteCategories(select, value = '') {
+  const names = [...new Set([...CATEGORY_PRESETS, ...sites.map(siteCategory).filter(Boolean)])];
+  select.replaceChildren(...[['', '未分类'], ...names.map(name => [name, name]), ['*new*', '新建分类…']].map(([value, label]) => {
+    const option = document.createElement('option'); option.value = value; option.textContent = label; return option;
+  }));
+  select.value = value;
+}
+function syncNewCategoryField() {
+  const creating = $('#site-category').value === '*new*';
+  $('#new-category-field').hidden = !creating; $('#new-category-name').required = creating;
+}
 let expandedCategory = read('siteCategory', '*');
 function categorySites(order = sites) { return expandedCategory === '*' ? order : order.filter(site => siteCategory(site) === expandedCategory); }
 function renderCategories() {
@@ -238,7 +250,7 @@ function renderCategories() {
   $('#site-category-toggle span').textContent = expandedCategory === '*' ? '展开全部' : expandedCategory || '未分类';
   $('#site-category-toggle').title = '切换分类；拖动图标到这里可展开并移入其他分类';
   $('#site-category-picker').style.setProperty('--category-width', Math.max(110, 4 + [...picker.children].reduce((width, button) => width + button.offsetWidth + 4, 0)) + 'px');
-  $('#site-category-list').replaceChildren(...names.map(name => { const option = document.createElement('option'); option.value = name; return option; }));
+  fillSiteCategories($('#site-category'), $('#site-category').value); syncNewCategoryField();
 }
 function renderSites() {
   renderCategories();
@@ -424,6 +436,7 @@ let editingSite = null;
 function resetSiteForm() {
   editingSite = null; $('#add-form').reset(); $('#add-error').hidden = true;
   $('#site-category').value = expandedCategory === '*' ? '' : expandedCategory;
+  syncNewCategoryField();
   $('#form-title').textContent = '添加网站'; $('#add-form [type=submit]').textContent = '添加网站'; $('#cancel-edit').hidden = true;
 }
 function persistSites() { save('sites', sites); renderSites(); renderSiteManager(); if (bookmarkEntries.length) renderBookmarks(); }
@@ -434,7 +447,13 @@ function renderSiteManager() {
     const copy = document.createElement('div'); copy.className = 'manager-copy';
     const name = document.createElement('strong'); name.textContent = site.name;
     const domain = document.createElement('small'); domain.textContent = (siteCategory(site) || '未分类') + ' · ' + websiteUrl(site.url).hostname;
-    copy.append(name, domain); row.append(copy);
+    const category = document.createElement('select'); category.className = 'manager-category'; category.setAttribute('aria-label', '分类：' + site.name);
+    fillSiteCategories(category, siteCategory(site));
+    category.addEventListener('change', () => {
+      if (category.value === '*new*') { row.querySelector('[data-action=edit]').click(); $('#site-category').value = '*new*'; syncNewCategoryField(); $('#new-category-name').focus(); return; }
+      site.category = category.value; persistSites(); $('#site-manager').children[index]?.querySelector('.manager-category').focus(); notify('已归入' + (site.category || '未分类'));
+    });
+    copy.append(name, domain, category); row.append(copy);
     const actions = document.createElement('div'); actions.className = 'manager-actions';
     const specs = [
       ['edit', '编辑', 'i-edit', false], ['up', '上移', 'i-up', index === 0],
@@ -448,6 +467,7 @@ function renderSiteManager() {
         if (action === 'edit') {
           editingSite = index; $('#site-name').value = site.name; $('#site-url').value = site.url;
           $('#site-category').value = siteCategory(site);
+          syncNewCategoryField();
           $('#form-title').textContent = '编辑网站'; $('#add-form [type=submit]').textContent = '保存修改'; $('#cancel-edit').hidden = false;
           $('#add-error').hidden = true; $('#add-panel').open = true; $('#site-name').focus(); return;
         }
@@ -463,15 +483,34 @@ function renderSiteManager() {
     }); row.append(actions); $('#site-manager').append(row);
   });
 }
+let currentSettingsTab = 'appearance';
+function selectSettingsTab(value, focus = false) {
+  currentSettingsTab = value;
+  document.querySelectorAll('.settings-nav [role=tab]').forEach(tab => { const selected = tab.dataset.settingsTab === value; tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1; if (selected && focus) tab.focus(); });
+  document.querySelectorAll('.settings-category-panel').forEach(panel => { panel.hidden = panel.id !== 'settings-category-' + value; });
+  $('#settings-subtitle').textContent = { appearance: '主题、色彩与界面动效', wallpaper: '本地壁纸、显示与播放', search: '搜索引擎、联想与历史', sites: '快捷网站、分类与浏览器书签', data: '设置备份与迁移' }[value];
+  $('.settings-content').scrollTop = 0;
+  animateChange($('#settings-category-' + value), [{ opacity: .65 }, { opacity: 1 }]);
+}
+document.querySelectorAll('.settings-nav [role=tab]').forEach((tab, index, tabs) => {
+  tab.addEventListener('click', () => selectSettingsTab(tab.dataset.settingsTab));
+  tab.addEventListener('keydown', event => {
+    const destination = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1;
+    if (destination >= 0) { event.preventDefault(); selectSettingsTab(tabs[destination].dataset.settingsTab, true); }
+  });
+});
 function openSettings(section) {
   $('#setting-theme').value = themePreference; $('#setting-engine').value = selectedEngine;
   $('#setting-newtab').checked = newTab; $('#setting-motion').checked = motionEnabled; renderSiteManager();
   $('#settings-dialog').showModal(); document.body.classList.add('settings-visible');
+  selectSettingsTab(section === 'add' || section === 'sites' ? 'sites' : currentSettingsTab);
+  $('#manage-sites').open = section === 'add' || section === 'sites';
   if (section === 'add') { resetSiteForm(); $('#add-panel').open = true; $('#site-name').focus(); }
   if (section === 'sites') $('#manage-sites').scrollIntoView({block:'start'});
 }
 $('#settings-open').addEventListener('click', () => openSettings());
 $('#add-shortcut').addEventListener('click', () => openSettings('add'));
+$('#settings-add-site').addEventListener('click', () => openSettings('add'));
 $('#edit-toggle').addEventListener('click', () => openSettings('sites'));
 $('#settings-close').addEventListener('click', () => $('#settings-dialog').close());
 $('#settings-done').addEventListener('click', () => $('#settings-dialog').close());
@@ -482,14 +521,16 @@ $('#setting-engine').addEventListener('change', event => setEngine(event.target.
 $('#setting-newtab').addEventListener('change', event => { newTab = event.target.checked; save('newTab', newTab); renderSites(); });
 $('#setting-motion').addEventListener('change', event => { motionEnabled = event.target.checked; document.documentElement.dataset.motion = motionEnabled ? 'on' : 'off'; save('motion', motionEnabled); syncBackgroundPlayback(); });
 $('#cancel-edit').addEventListener('click', resetSiteForm);
+$('#site-category').addEventListener('change', () => { syncNewCategoryField(); if (!$('#new-category-field').hidden) $('#new-category-name').focus(); });
 $('#add-form').addEventListener('submit', event => {
   event.preventDefault(); const name = $('#site-name').value.trim(); const url = websiteUrl($('#site-url').value);
   let error = !name ? '请输入网站名称。' : !url ? '请输入有效的网址，例如 example.com；仅支持 http 或 https。' : sites.some((site, index) => index !== editingSite && websiteUrl(site.url).href === url.href) ? '这个网址已经在快捷入口中了。' : '';
   $('#add-error').hidden = !error; $('#add-error').textContent = error;
   if (error) return;
   const wasEditing = editingSite !== null;
-  const category = $('#site-category').value.trim();
-  if (category === '*') { $('#add-error').hidden = false; $('#add-error').textContent = '请用文字命名分类。'; return; }
+  const creatingCategory = $('#site-category').value === '*new*';
+  const category = creatingCategory ? $('#new-category-name').value.trim() : $('#site-category').value;
+  if (category === '*' || category === '*new*' || (creatingCategory && !category)) { $('#add-error').hidden = false; $('#add-error').textContent = '请输入分类名称。'; return; }
   const updated = { name, url: url.href, category };
   if (wasEditing) sites[editingSite] = updated; else sites.push(updated);
   if (expandedCategory !== '*') { expandedCategory = category; save('siteCategory', expandedCategory); }
