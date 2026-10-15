@@ -650,20 +650,19 @@ let backgroundResumeTime = 0;
 let backgroundMediaVersion = 0;
 let backgroundRestorePending = false;
 let wallpaperInkFrame = 0;
-let wallpaperInkTimer;
+let wallpaperInkPending = false;
 const wallpaperInkCanvas = document.createElement('canvas');
 const wallpaperInkContext = wallpaperInkCanvas.getContext('2d', { willReadFrequently: true });
 function scheduleWallpaperInk() {
-  if (document.hidden || (backgroundVideoActive && !backgroundWindowFocused)) {
-    clearTimeout(wallpaperInkTimer); cancelAnimationFrame(wallpaperInkFrame); wallpaperInkFrame = 0; return;
-  }
+  if (!wallpaperInkPending) return;
   if (!wallpaperInkFrame) wallpaperInkFrame = requestAnimationFrame(updateWallpaperInk);
 }
 function updateWallpaperInk() {
-  wallpaperInkFrame = 0; clearTimeout(wallpaperInkTimer);
-  if (document.hidden || !document.body.classList.contains('has-background') || !wallpaperInkContext) return;
+  wallpaperInkFrame = 0;
+  if (!wallpaperInkPending || !document.body.classList.contains('has-background') || !wallpaperInkContext) return;
   const video = $('#background-video');
-  const source = backgroundVideoActive && video.readyState >= 2 ? video : $('#background-thumbnail');
+  if (backgroundVideoActive && video.readyState < 2) return;
+  const source = backgroundVideoActive ? video : $('#background-thumbnail');
   const width = source.videoWidth || source.naturalWidth;
   const height = source.videoHeight || source.naturalHeight;
   if (!width || !height) return;
@@ -678,6 +677,7 @@ function updateWallpaperInk() {
   try {
     ctx.drawImage(source, (bounds.width - width * scale) / 2 * ratio, (bounds.height - height * scale) / 2 * ratio, width * scale * ratio, height * scale * ratio);
     const pixels = ctx.getImageData(0, 0, wallpaperInkCanvas.width, wallpaperInkCanvas.height).data;
+    wallpaperInkPending = false;
     for (const element of document.querySelectorAll('.wallpaper-ink')) {
       const rect = element.getBoundingClientRect(); let luminance = 0; let count = 0;
       for (let row = 0; row < 4; row++) for (let col = 0; col < 16; col++) {
@@ -695,21 +695,14 @@ function updateWallpaperInk() {
       element.style.setProperty('--wallpaper-outline', light ? '#fff9' : '#0009');
     }
   } catch { /* 媒体尚不可绘制时沿用上次文字颜色。 */ }
-  if (backgroundVideoActive && !video.paused && backgroundWindowFocused) wallpaperInkTimer = setTimeout(scheduleWallpaperInk, 2000);
 }
 $('#background-thumbnail').addEventListener('load', scheduleWallpaperInk);
-for (const event of ['loadeddata', 'seeked', 'playing', 'pause']) $('#background-video').addEventListener(event, scheduleWallpaperInk);
-window.addEventListener('resize', scheduleWallpaperInk);
-window.addEventListener('scroll', scheduleWallpaperInk, { passive: true });
-document.addEventListener('visibilitychange', scheduleWallpaperInk);
-const wallpaperInkResize = new ResizeObserver(scheduleWallpaperInk);
-document.querySelectorAll('.wallpaper-ink').forEach(element => wallpaperInkResize.observe(element));
+$('#background-video').addEventListener('loadeddata', scheduleWallpaperInk);
 let backgroundFit = read('backgroundFit', 'cover');
 if (!['contain', 'cover'].includes(backgroundFit)) backgroundFit = 'cover';
 function applyBackgroundFit() {
   document.documentElement.style.setProperty('--background-fit', backgroundFit);
   $('#setting-background-fit').value = backgroundFit;
-  scheduleWallpaperInk();
 }
 applyBackgroundFit();
 $('#setting-background-fit').addEventListener('change', event => {
@@ -733,7 +726,6 @@ function applyBackgroundParameters() {
   $('#setting-background-playing').checked = backgroundPlaying;
   $('#background-video').defaultPlaybackRate = backgroundSpeed;
   $('#background-video').playbackRate = backgroundSpeed;
-  scheduleWallpaperInk();
 }
 applyBackgroundParameters();
 $('#setting-background-brightness').addEventListener('input', event => { backgroundBrightness = Number(event.target.value); applyBackgroundParameters(); save('backgroundBrightness', backgroundBrightness); });
@@ -746,6 +738,7 @@ $('#background-parameters-reset').addEventListener('click', () => {
   save('backgroundFit', backgroundFit); save('backgroundBrightness', backgroundBrightness); save('backgroundBlur', backgroundBlur); save('backgroundSpeed', backgroundSpeed); save('backgroundPlaying', backgroundPlaying);
 });
 function applyBackground(value) {
+  cancelAnimationFrame(wallpaperInkFrame); wallpaperInkFrame = 0; wallpaperInkPending = !!value;
   backgroundMediaVersion++; backgroundRestorePending = false; backgroundResumeTime = 0;
   const video = $('#background-video'); video.onloadedmetadata = null; video.pause(); video.removeAttribute('src'); video.removeAttribute('poster'); video.load(); video.hidden = true;
   if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
