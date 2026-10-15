@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg?v=7fc461101fe1">
-  <link rel="stylesheet" href="./style.css?v=e63f6f31bd41">
-  <script src="./app.js?v=a4ea20ac9c24" defer></script>
+  <link rel="stylesheet" href="./style.css?v=727c0afc36a7">
+  <script src="./app.js?v=5b4ab42b10e5" defer></script>
   <script src="./search-assist.js?v=b6febdcd0a21" defer></script>
 </head>
 <body>
@@ -60,7 +60,7 @@
       <div class="dashboard-grid">
       <section class="shortcuts-section glass-module" aria-labelledby="shortcuts-heading">
         <div class="section-heading"><h2 id="shortcuts-heading">常用网站 <span id="shortcut-count"></span></h2><div class="section-actions"><button id="add-shortcut" class="text-button" type="button"><svg><use href="#i-plus"/></svg>添加</button><button id="edit-toggle" class="text-button" type="button"><svg><use href="#i-edit"/></svg><span>管理</span></button></div></div>
-        <div class="site-category-bar"><label for="site-category-filter">展开分类</label><select id="site-category-filter" aria-label="展开网站分类"><option value="*">展开全部</option></select></div>
+        <div class="site-category-bar"><div id="site-category-picker" class="engine-picker category-picker glass-module"><button id="site-category-toggle" class="engine-toggle" type="button" aria-expanded="false" aria-controls="site-category-filter"><span>展开全部</span><svg aria-hidden="true"><use href="#i-down"/></svg></button><div id="site-category-filter" class="category-options" role="group" aria-label="展开网站分类" inert aria-hidden="true"></div></div></div>
         <div id="shortcuts" class="shortcuts"></div>
         <nav class="shortcut-pagination" aria-label="常用网站分页"><button id="sites-prev" class="text-button" type="button" aria-label="常用网站上一页" title="点击翻页；拖动图标时在这里停留可跨页">上一页</button><span id="sites-page" aria-live="polite"></span><button id="sites-next" class="text-button" type="button" aria-label="常用网站下一页" title="点击翻页；拖动图标时在这里停留可跨页">下一页</button></nav>
         <p id="empty-state" class="empty-state" hidden>还没有快捷入口，添加一个常去的网站吧。</p>
