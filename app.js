@@ -53,8 +53,8 @@ function colorContrast(a, b) {
 }
 function applyAppearance() {
   const dark = theme === 'dark';
-  const transparency = Math.min(glassTransparency ?? (dark ? 24 : 36), dark ? 42 : 50);
-  const blur = glassBlur ?? (smallGlassScreen.matches ? 16 : 24);
+  const transparency = Math.min(glassTransparency ?? (dark ? 36 : 46), dark ? 42 : 50);
+  const blur = glassBlur ?? (smallGlassScreen.matches ? 4 : 6);
   const style = document.documentElement.style;
   if (glassBlur === null) style.removeProperty('--glass-blur'); else style.setProperty('--glass-blur', blur + 'px');
   style.setProperty('--glass-opacity', 1 - transparency / 100);
@@ -87,6 +87,7 @@ function applyAppearance() {
     style.setProperty('--accent', accentColor); style.setProperty('--custom-accent', accentColor);
     style.setProperty('--accent-text', text); style.setProperty('--soft', `rgb(${soft.join(' ')})`);
   }
+  document.dispatchEvent(new Event('appearancechange'));
 }
 $('#setting-glass-blur').addEventListener('input', event => { glassBlur = Number(event.target.value); applyAppearance(); save('glassBlur', glassBlur); });
 $('#setting-glass-transparency').addEventListener('input', event => { glassTransparency = Number(event.target.value); applyAppearance(); save('glassTransparency', glassTransparency); });
@@ -131,11 +132,13 @@ function setEngine(value) {
 }
 function moveEngineIndicator() {
   const label = $('[name=engine]:checked').parentElement;
-  const indicator = $('.engine-indicator');
+  moveSelectionIndicator($('.engines'), label, $('.engines .engine-indicator'));
+}
+function moveSelectionIndicator(group, label, indicator) {
   indicator.style.width = label.offsetWidth + 'px';
   indicator.style.height = label.offsetHeight + 'px';
   indicator.style.transform = `translate(${label.offsetLeft}px, ${label.offsetTop}px)`;
-  $('.engines').classList.add('has-indicator');
+  group.classList.add('has-indicator');
 }
 new ResizeObserver(moveEngineIndicator).observe($('.engines'));
 document.fonts.ready.then(moveEngineIndicator);
@@ -547,6 +550,11 @@ const HOT_SOURCES = {
   weibo: { name: '微博', board: 'https://s.weibo.com/top/summary?cate=realtimehot', host: 'weibo.com', search: 'https://s.weibo.com/weibo?q=' }
 };
 let hotSource = read('hotSource', 'douyin'); if (!Object.hasOwn(HOT_SOURCES, hotSource)) hotSource = 'douyin';
+function moveHotIndicator() {
+  moveSelectionIndicator($('.hot-sources'), $('[data-hot-source][aria-pressed=true]'), $('.hot-indicator'));
+}
+new ResizeObserver(moveHotIndicator).observe($('.hot-sources'));
+document.fonts.ready.then(moveHotIndicator);
 let hotItems = []; let hotPage = 0; let hotVersion = 0;
 const hotPending = new Map();
 function normalizeHot(source, data) {
@@ -572,6 +580,7 @@ function renderHot() {
 async function loadHot(source, force = false) {
   const version = ++hotVersion; hotSource = source; hotPage = 0; hotItems = [];
   document.querySelectorAll('[data-hot-source]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.hotSource === source)));
+  moveHotIndicator();
   $('#hot-open').href = HOT_SOURCES[source].board; $('#hot-list').setAttribute('aria-label', HOT_SOURCES[source].name + '热点排行');
   $('#hot-updated').textContent = ''; $('#hot-status').textContent = '正在获取' + HOT_SOURCES[source].name + '热点…'; $('#hot-refresh').disabled = true;
   let cached;
