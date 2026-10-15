@@ -2,25 +2,25 @@
 name: 栖点
 description: 简洁、搜索优先的双端上网起点
 colors:
-  bg: "#f7f8fa"
+  bg: "#f5f5f3"
   surface: "#ffffff"
-  fg: "#222c30"
-  muted: "#626e74"
-  line: "#dce2e5"
-  accent: "#365f91"
-  accent-text: "#ffffff"
-  soft: "#e7eef8"
-  hover: "#edf0f2"
+  fg: "#292724"
+  muted: "#68645d"
+  line: "#dfddd6"
+  accent: "#d97757"
+  accent-text: "#211d1a"
+  soft: "#f1e6df"
+  hover: "#eceae4"
   error: "#a32323"
-  dark-bg: "#161c1b"
-  dark-surface: "#202826"
-  dark-fg: "#e4eae6"
-  dark-muted: "#a5b3ac"
-  dark-line: "#404d47"
-  dark-accent: "#acccf5"
-  dark-accent-text: "#15324e"
-  dark-soft: "#293b50"
-  dark-hover: "#2a3430"
+  dark-bg: "#1b1b19"
+  dark-surface: "#242422"
+  dark-fg: "#eeeae3"
+  dark-muted: "#b4afa7"
+  dark-line: "#44423d"
+  dark-accent: "#e7a78f"
+  dark-accent-text: "#211d1a"
+  dark-soft: "#3b2b25"
+  dark-hover: "#302f2c"
   dark-error: "#ffb4ad"
 typography:
   headline:
@@ -51,7 +51,7 @@ components:
 
 ## Overview
 
-遵循用户确认的简洁浅色方向，支持深色切换。中性底色、搜索优先、低装饰密度；蓝色用于操作与少量识别点缀。实际实现以 `dist/style.css` 为准。
+遵循用户确认的简洁浅色方向，支持深色切换。中性底色、搜索优先、低装饰密度；陶土色用于操作与少量识别点缀。实际实现以 `dist/style.css` 为准。
 
 ## Colors
 
@@ -124,3 +124,7 @@ Wallpaper Engine 壁纸库位于背景区之后，目录选择、名称/编号�
 页面改为独立小模块：外层顶栏、主区、底栏保留原来的几何和间距，仅承担布局；品牌、时钟、标题说明、搜索框、搜索引擎、常用网站、热点、键盘提示、短句和换句操作分别使用自己的表面。表面使用不占布局空间的 before 伪元素，保持正文坐标与原来一致；壁纸模式继续统一使用原生模糊和透明度设置，不启用 SVG 折射。手机保留顶栏原有两行高度，320px 窄屏也不溢出。
 
 主题与设置脱离顶栏，作为独立组件固定在页面右上角，保留原有按钮 ID、键盘访问顺序与设置抽屉行为。搜索聚焦时浮动入口与标题模块一同过渡模糊，搜索框保持清晰。分隔线、滚动热点、网站分页与跨页拖动保持原功能。
+
+## Open Claude UI 参考优化
+
+参考 Caho1/open-claude-ui 的暖中性色阶、陶土点缀、细轮廓和轻按压反馈，保持起始页的内容结构。默认背景继续平面布局，壁纸继续原生玻璃；已保存的自定义强调色优先。搜索按钮保持圆形，搜索引擎与热点来源沿用同底板伸展，顶栏、固定一言和分页不改动。热点滚动边缘使用 12px 非线性渐隐，触顶或触底取消对应遮罩，键盘聚焦列表时取消遮罩以保持阅读清晰。无新增运行时依赖，不引入全屏折射或循环装饰动画；壁纸亮度采样仍仅在切换或首次恢复时进行一次。

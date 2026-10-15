@@ -71,9 +71,9 @@ function applyAppearance() {
   if (glassBlur === null) style.removeProperty('--glass-blur'); else style.setProperty('--glass-blur', blur + 'px');
   style.setProperty('--glass-opacity', 1 - transparency / 100);
   const clarity = Math.max(0, (transparency - (dark ? 24 : 36)) / (dark ? 18 : 14));
-  const tint = dark ? [18, 26, 33].map(v => Math.round(v * (1 - clarity))) : [247, 248, 250];
-  const foreground = (dark ? [242, 247, 250] : [28, 43, 54]).map(v => Math.round(v + ((dark ? 255 : 0) - v) * clarity));
-  const muted = (dark ? [222, 232, 240] : [38, 56, 71]).map(v => Math.round(v + ((dark ? 255 : 0) - v) * clarity));
+  const tint = dark ? [28, 27, 25].map(v => Math.round(v * (1 - clarity))) : [248, 247, 244];
+  const foreground = (dark ? [244, 240, 233] : [35, 33, 29]).map(v => Math.round(v + ((dark ? 255 : 0) - v) * clarity));
+  const muted = (dark ? [237, 231, 221] : [56, 52, 47]).map(v => Math.round(v + ((dark ? 255 : 0) - v) * clarity));
   const glintA = dark ? .08 - clarity * .04 : .32;
   const glintB = dark ? .04 - clarity * .02 : .12;
   style.setProperty('--glass-tint', tint.join(' ')); style.setProperty('--glass-fg', `rgb(${foreground.join(' ')})`); style.setProperty('--glass-muted', `rgb(${muted.join(' ')})`);
@@ -81,17 +81,17 @@ function applyAppearance() {
   $('#setting-glass-blur').value = blur; $('#glass-blur-value').value = blur + ' px';
   $('#setting-glass-transparency').max = dark ? 42 : 50;
   $('#setting-glass-transparency').value = transparency; $('#glass-transparency-value').value = transparency + '%';
-  $('#setting-accent-color').value = accentColor || (dark ? '#acccf5' : '#365f91');
+  $('#setting-accent-color').value = accentColor || (dark ? '#e7a78f' : '#d97757');
   for (const key of ['--accent', '--custom-accent', '--accent-text', '--accent-ink', '--soft']) style.removeProperty(key);
-  const chosenAccent = accentColor || (dark ? '#acccf5' : '#365f91');
+  const chosenAccent = accentColor || (dark ? '#e7a78f' : '#d97757');
   const rgb = chosenAccent.slice(1).match(/../g).map(value => parseInt(value, 16));
   const text = colorContrast(rgb, [0, 0, 0]) > colorContrast(rgb, [255, 255, 255]) ? '#000000' : '#ffffff';
   const alpha = 1 - transparency / 100;
   // 以任意壁纸下最不利的玻璃底色计算文字用色；按钮保留用户选择的原色。
   const glint = 1 - (1 - glintA) * (1 - glintB);
   const glassBase = dark ? tint.map(v => (v * alpha + 255 * (1 - alpha)) * (1 - glint) + 255 * glint) : tint.map(v => v * alpha);
-  const base = dark ? [22, 28, 27] : [247, 248, 250];
-  const soft = accentColor ? base.map((v, i) => Math.round(v * .84 + rgb[i] * .16)) : dark ? [41, 59, 80] : [231, 238, 248];
+  const base = dark ? [27, 27, 25] : [245, 245, 243];
+  const soft = accentColor ? base.map((v, i) => Math.round(v * .84 + rgb[i] * .16)) : dark ? [59, 43, 37] : [241, 230, 223];
   let ink = rgb;
   for (let amount = 1; Math.min(...[glassBase, base, soft].map(bg => colorContrast(ink, bg))) < 4.6 && amount <= 100; amount++) ink = rgb.map(v => Math.round(v + ((dark ? 255 : 0) - v) * amount / 100));
   style.setProperty('--accent-ink', `rgb(${ink.join(' ')})`);
@@ -175,7 +175,7 @@ function applyTheme() {
   const label = theme === 'light' ? '切换到深色模式' : '切换到浅色模式';
   $('#theme-toggle').setAttribute('aria-label', label); $('#theme-toggle').title = label;
   $('#theme-toggle use').setAttribute('href', theme === 'light' ? '#i-moon' : '#i-sun');
-  $('meta[name=theme-color]').content = theme === 'light' ? '#f7f8fa' : '#161c1b';
+  $('meta[name=theme-color]').content = theme === 'light' ? '#f5f5f3' : '#1b1b19';
   applyAppearance();
 }
 applyTheme();
@@ -613,6 +613,13 @@ new ResizeObserver(moveHotIndicator).observe($('.hot-sources'));
 document.fonts.ready.then(moveHotIndicator);
 let hotItems = []; let hotVersion = 0;
 const hotPending = new Map();
+function updateHotScrollEdges() {
+  const list = $('#hot-list');
+  list.style.setProperty('--fade-top', list.scrollTop > 2 ? '12px' : '0px');
+  list.style.setProperty('--fade-bottom', list.scrollTop + list.clientHeight < list.scrollHeight - 2 ? '12px' : '0px');
+}
+$('#hot-list').addEventListener('scroll', updateHotScrollEdges, { passive: true });
+new ResizeObserver(updateHotScrollEdges).observe($('#hot-list'));
 function normalizeHot(source, data) {
   if (!Array.isArray(data.list)) throw new Error('榜单格式无效');
   return data.list.filter(item => item && typeof item.title === 'string' && item.title.trim()).slice(0, 15).map(item => {
@@ -629,6 +636,7 @@ function renderHot() {
     const title = document.createElement('span'); title.className = 'hot-title'; title.textContent = item.title;
     link.append(rank, title); row.append(link); $('#hot-list').append(row);
   }
+  updateHotScrollEdges();
   if (hotItems.length) animateChange($('#hot-list'), [{ opacity: .65 }, { opacity: 1 }]);
 }
 async function loadHot(source, force = false) {
