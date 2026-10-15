@@ -150,12 +150,12 @@ body:not(.has-background) .engine-picker::before{background:var(--soft)}
 .engine-toggle{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;padding:10px 16px;border-radius:14px;font-size:13px;color:var(--accent-ink,var(--accent));white-space:nowrap;opacity:1;visibility:visible;transition:opacity 180ms 100ms,visibility 0s}
 .engine-toggle svg{width:15px;height:15px}
 .engine-picker.is-open .engine-toggle{opacity:0;visibility:hidden;pointer-events:none;transition:opacity 100ms,visibility 100ms}
-.engine-picker :is(.engines,.hot-sources){position:absolute;inset:0;margin:0;width:100%;max-width:none;height:44px;padding:0 4px;gap:6px;flex-wrap:nowrap;visibility:hidden;opacity:0;pointer-events:none;transform:translateX(-8px);transition:opacity 120ms,transform 280ms cubic-bezier(.22,1,.36,1),visibility 280ms}
-.engine-picker.is-open :is(.engines,.hot-sources){visibility:visible;opacity:1;pointer-events:auto;transform:none;transition:opacity 220ms 80ms,transform 300ms cubic-bezier(.22,1,.36,1),visibility 0s}
+.engine-picker :is(.engines,.hot-sources,.category-options){position:absolute;inset:0;margin:0;width:100%;max-width:none;height:44px;padding:0 4px;gap:6px;flex-wrap:nowrap;visibility:hidden;opacity:0;pointer-events:none;transform:translateX(-8px);transition:opacity 120ms,transform 280ms cubic-bezier(.22,1,.36,1),visibility 280ms}
+.engine-picker.is-open :is(.engines,.hot-sources,.category-options){visibility:visible;opacity:1;pointer-events:auto;transform:none;transition:opacity 220ms 80ms,transform 300ms cubic-bezier(.22,1,.36,1),visibility 0s}
 .engine-picker .engine{flex-shrink:0}.engine-picker .engine span{white-space:nowrap}.engine-picker .engine input:focus-visible+span{outline-offset:-3px}
 .notice:not([hidden]){animation:none}
 @media(min-width:1001px) and (max-height:800px){.engine-picker{margin-top:6px}}
-@media(max-width:600px){.engine-picker{margin-top:14px}.engine-picker :is(.engines,.hot-sources){gap:2px}.engine-picker .engine span{padding:10px 8px;font-size:12px}}
+@media(max-width:600px){.engine-picker{margin-top:14px}.engine-picker :is(.engines,.hot-sources,.category-options){gap:2px}.engine-picker .engine span{padding:10px 8px;font-size:12px}}
 
 /* 热点来源沿用同一块伸展底板，预留宽度保持标题和刷新按钮稳定。 */
 .hot-source-slot{display:flex;justify-content:flex-end;width:180px;max-width:100%;grid-column:2;grid-row:1}
@@ -207,3 +207,20 @@ body.search-focused .search-box{box-shadow:inset 0 0 0 1px var(--line),0 0 0 4px
 .assist-status{margin:0;padding:8px 16px 12px;color:var(--muted);font-size:12px;line-height:1.6}.assist-status:empty{display:none}
 
 .site-category-bar{display:flex;align-items:center;gap:8px;margin:8px 0 4px;min-height:28px;font-size:12px;color:var(--muted)}.site-category-bar select{min-height:28px;padding:3px 24px 3px 8px;font-size:12px;max-width:200px;color:var(--fg);background:transparent}.shortcuts-section>#empty-state{top:100px}
+
+.category-picker.engine-picker{margin:0;width:110px;height:32px}.category-picker.engine-picker.is-open{width:var(--category-width,280px)}.category-picker .engine-toggle{height:32px;font-size:12px;padding:4px 12px}.category-picker .category-options{display:flex;height:32px;gap:4px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}.category-options button{flex:0 0 auto;min-height:32px;max-width:190px;padding:4px 12px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:999px;color:var(--fg);transition:background-color var(--ease),color var(--ease),box-shadow var(--ease)}.category-options button:hover{background:var(--hover)}.category-options button[aria-pressed=true],.category-options button.category-drop-target{background:var(--accent);color:var(--accent-text)}.category-options button.category-drop-target{box-shadow:inset 0 0 0 2px var(--fg)}.category-options button:focus-visible{outline-offset:-3px}.category-picker .engine-toggle span{overflow:hidden;text-overflow:ellipsis}
+
+/* 新拟态只用于默认背景，壁纸玻璃与搜索聚焦晕光保持原样。 */
+body:not(.has-background){--neu-light:rgba(255,255,255,.9);--neu-shade:rgba(60,54,44,.12);--neu-raised:5px 5px 12px var(--neu-shade),-5px -5px 12px var(--neu-light);--neu-pressed:inset 2px 2px 5px var(--neu-shade),inset -2px -2px 5px var(--neu-light)}
+[data-theme=dark] body:not(.has-background){--neu-light:rgba(255,255,255,.045);--neu-shade:rgba(0,0,0,.42)}
+body:not(.has-background):not(.search-focused) .search-box{background:var(--bg);outline-color:transparent;box-shadow:var(--neu-raised),inset 1px 1px 0 var(--neu-light)}
+body:not(.has-background) :is(.engine-picker,.settings-button){box-shadow:var(--neu-raised);transition:width 340ms cubic-bezier(.22,1,.36,1),filter var(--travel),box-shadow var(--travel)}
+body:not(.has-background) .engine-picker::before,body:not(.has-background) .settings-button{background:var(--bg)}
+body:not(.has-background) .settings-button:active{box-shadow:var(--neu-pressed)}
+body:not(.has-background) .shortcuts>.shortcut>.shortcut-link{background:var(--bg);border-radius:12px;box-shadow:3px 3px 7px var(--neu-shade),-3px -3px 7px var(--neu-light);padding-left:7px;padding-right:7px;transition:transform var(--travel),background-color var(--ease),box-shadow var(--travel)}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){html:not([data-motion=off]) body:not(.has-background) .shortcuts>.shortcut>.shortcut-link:hover{box-shadow:var(--neu-raised);transform:translateY(-2px)}}
+body:not(.has-background) .shortcuts>.shortcut>.shortcut-link:active{box-shadow:var(--neu-pressed);transform:scale(.98)}
+body:not(.has-background) .shortcuts>.shortcut::after{display:none}
+
+@media(prefers-reduced-motion:reduce){body:not(.has-background) .shortcuts>.shortcut>.shortcut-link:active{transform:none}}
+[data-motion=off] body:not(.has-background) .shortcuts>.shortcut>.shortcut-link:active{transform:none}

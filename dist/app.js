@@ -232,9 +232,12 @@ function renderCategories() {
   if (expandedCategory !== '*' && expandedCategory !== '' && !names.includes(expandedCategory)) expandedCategory = '*';
   const picker = $('#site-category-filter'); picker.replaceChildren();
   for (const [value, label] of [['*', '展开全部'], ['', '未分类'], ...names.map(name => [name, name])]) {
-    const option = document.createElement('option'); option.value = value; option.textContent = label; picker.append(option);
+    const option = document.createElement('button'); option.type = 'button'; option.dataset.category = value; option.textContent = label;
+    option.setAttribute('aria-pressed', String(value === expandedCategory)); picker.append(option);
   }
-  picker.value = expandedCategory;
+  $('#site-category-toggle span').textContent = expandedCategory === '*' ? '展开全部' : expandedCategory || '未分类';
+  $('#site-category-toggle').title = '切换分类；拖动图标到这里可展开并移入其他分类';
+  $('#site-category-picker').style.setProperty('--category-width', Math.max(110, 4 + [...picker.children].reduce((width, button) => width + button.offsetWidth + 4, 0)) + 'px');
   $('#site-category-list').replaceChildren(...names.map(name => { const option = document.createElement('option'); option.value = name; return option; }));
 }
 function renderSites() {
@@ -257,7 +260,7 @@ function renderSites() {
     const link = document.createElement('a'); link.className = 'shortcut-link'; link.href = websiteUrl(site.url).href;
     link.draggable = false;
     if (newTab) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
-    const badge = document.createElement('span'); badge.className = 'site-badge'; badge.setAttribute('aria-hidden', 'true'); badge.title = '拖动图标排序；停在翻页按钮上可跨页，拖到下方移除';
+    const badge = document.createElement('span'); badge.className = 'site-badge'; badge.setAttribute('aria-hidden', 'true'); badge.title = '拖动排序；停在分类按钮上展开分类，松手移入；停在翻页按钮上跨页';
     const fallback = document.createElement('span'); fallback.textContent = typeof site.badge === 'string' ? site.badge.slice(0,2) : Array.from(site.name.trim())[0] || '站';
     const icon = document.createElement('img'); icon.className = 'site-favicon'; icon.alt = ''; icon.width = 26; icon.height = 26; icon.referrerPolicy = 'no-referrer';
     icon.draggable = false;
@@ -276,10 +279,22 @@ function renderSites() {
   });
 }
 renderSites();
-$('#site-category-filter').addEventListener('change', event => {
-  finishShortcutDrag(null, true); expandedCategory = event.target.value; save('siteCategory', expandedCategory); sitesPage = 0; renderSites();
+function setCategoryPicker(open, returnFocus = false) {
+  $('#site-category-picker').classList.toggle('is-open', open);
+  $('#site-category-toggle').setAttribute('aria-expanded', String(open));
+  $('#site-category-filter').inert = !open; $('#site-category-filter').setAttribute('aria-hidden', String(!open));
+  if (returnFocus) $('#site-category-toggle').focus();
+}
+$('#site-category-toggle').addEventListener('click', () => setCategoryPicker(!$('#site-category-picker').classList.contains('is-open')));
+$('#site-category-toggle').addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); setCategoryPicker(true); $('#site-category-filter [aria-pressed=true]').focus(); } });
+$('#site-category-filter').addEventListener('click', event => {
+  const button = event.target.closest('[data-category]'); if (!button || shortcutDrag || suppressShortcutClick) return;
+  expandedCategory = button.dataset.category; save('siteCategory', expandedCategory); sitesPage = 0; renderSites(); setCategoryPicker(false, true);
   animateChange($('#shortcuts'), [{ opacity: .65 }, { opacity: 1 }]);
 });
+document.addEventListener('pointerdown', event => { if (!shortcutDrag && !$('#site-category-picker').contains(event.target)) setCategoryPicker(false); });
+$('#site-category-picker').addEventListener('focusout', event => { if (event.relatedTarget && !$('#site-category-picker').contains(event.relatedTarget)) setCategoryPicker(false); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && $('#site-category-picker').classList.contains('is-open')) { event.preventDefault(); setCategoryPicker(false, true); } });
 function animateChange(element, frames, duration = 220) {
   if (!motionEnabled || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   element.getAnimations().forEach(animation => animation.cancel());
@@ -339,6 +354,11 @@ function updateShortcutDrag(event) {
   }
   drag.ghost.style.transform = `translate(${event.clientX - drag.offsetX}px,${event.clientY - drag.offsetY}px)`;
   const target = document.elementFromPoint(event.clientX, event.clientY);
+  const categoryToggle = target?.closest('#site-category-toggle');
+  if (categoryToggle && !drag.categoryTimer) drag.categoryTimer = setTimeout(() => { if (shortcutDrag === drag) setCategoryPicker(true); }, 350);
+  if (!categoryToggle) { clearTimeout(drag.categoryTimer); drag.categoryTimer = null; }
+  const categoryTarget = target?.closest('#site-category-filter [data-category]');
+  if (drag.categoryTarget !== categoryTarget) { drag.categoryTarget?.classList.remove('category-drop-target'); drag.categoryTarget = categoryTarget; categoryTarget?.classList.add('category-drop-target'); }
   dropzone.classList.toggle('is-over', !!target?.closest('#shortcut-dropzone'));
   hoverDragPage(drag, target?.closest('#sites-prev,#sites-next'));
   const children = [...$('#shortcuts').children];
@@ -375,11 +395,16 @@ function finishShortcutDrag(event, cancelled = false) {
   shortcutDrag = null;
   if (!drag.active) return;
   clearDragPageTimer(drag);
+  clearTimeout(drag.categoryTimer); drag.categoryTarget?.classList.remove('category-drop-target');
+  const categoryDrop = !cancelled && document.elementFromPoint(event.clientX, event.clientY)?.closest('#site-category-filter [data-category]');
+  const moveCategory = categoryDrop && categoryDrop.dataset.category !== '*' && categoryDrop.dataset.category !== siteCategory(drag.site);
   const remove = !cancelled && document.elementFromPoint(event.clientX, event.clientY)?.closest('#shortcut-dropzone');
   drag.ghost.remove(); dropzone.hidden = true; dropzone.classList.remove('is-over'); document.body.classList.remove('dragging-shortcut');
   if (!cancelled) {
     const removedIndex = sites.indexOf(drag.site);
     sites = remove ? drag.order.filter(site => site !== drag.site) : drag.order;
+    if (moveCategory) { drag.site.category = categoryDrop.dataset.category; expandedCategory = drag.site.category; save('siteCategory', expandedCategory); sitesPage = Math.floor(categorySites().indexOf(drag.site) / SITES_PER_PAGE); }
+    setCategoryPicker(false);
     persistSites();
     if (remove) {
       const removed = drag.site;
@@ -387,7 +412,7 @@ function finishShortcutDrag(event, cancelled = false) {
       const undo = document.createElement('button'); undo.type = 'button'; undo.textContent = '撤销';
       undo.addEventListener('click', () => { sites.splice(Math.min(removedIndex, sites.length), 0, removed); sitesPage = Math.floor(removedIndex / SITES_PER_PAGE); persistSites(); notify('已恢复' + removed.name); }, { once: true });
       $('#notice').append(undo);
-    } else notify('排列顺序已保存');
+    } else notify(moveCategory ? '已移入' + (expandedCategory || '未分类') : '排列顺序已保存');
   } else { sitesPage = drag.originalPage; renderSites(); }
   setTimeout(() => { suppressShortcutClick = false; }, 0);
 }
