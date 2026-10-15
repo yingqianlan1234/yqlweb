@@ -8,7 +8,7 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg">
-  <link rel="stylesheet" href="./style.css?v=c27826f95e0a">
+  <link rel="stylesheet" href="./style.css?v=3ffe479f60e4">
   <script src="./app.js?v=d37664f7a2a4" defer></script>
 </head>
 <body>
@@ -37,11 +37,13 @@
     <div class="top-actions floating-actions glass-module" role="group" aria-label="页面设置"><button id="theme-toggle" class="icon-button" type="button" aria-label="切换到深色模式" title="切换到深色模式"><svg><use href="#i-moon"/></svg></button><button id="settings-open" class="settings-button" type="button" aria-haspopup="dialog" aria-controls="settings-dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
     <main>
       <section class="search-section" aria-labelledby="greeting">
-        <div class="intro-module glass-module"><h1 id="greeting">今天，想去哪里？</h1>
+        <form id="search-form" role="search">
+          <div class="search-panel glass-module">
+        <div class="intro-module"><h1 id="greeting">今天，想去哪里？</h1>
         <p class="intro">从一次搜索，到每个常去的地方。</p>
         </div>
-        <form id="search-form" role="search">
-          <div class="search-box glass-module"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button></div>
+          <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button></div>
+          </div>
           <fieldset class="engines glass-module"><legend class="sr-only">选择搜索引擎</legend><span class="engine-track" aria-hidden="true"><span class="engine-indicator"></span></span>
             <label class="engine"><input type="radio" name="engine" value="baidu" checked><span>百度</span></label>
             <label class="engine"><input type="radio" name="engine" value="bing"><span>必应</span></label>
@@ -66,7 +68,6 @@
         <div class="hot-meta"><span id="hot-updated"></span><a id="hot-open" href="https://www.douyin.com/hot" target="_blank" rel="noopener noreferrer">完整榜单 <svg aria-hidden="true"><use href="#i-out"/></svg></a></div>
       </section>
       </div>
-      <p class="keyboard-tip glass-module"><kbd>/</kbd> 快速搜索<span>·</span><kbd>Enter</kbd> 出发</p>
     </main>
     <footer class="quote-widget" aria-label="一言短句"><div class="quote-copy glass-module" aria-live="polite" aria-atomic="true"><p id="quote-text"></p><a id="quote-source" class="quote-source">栖点短句</a></div><button id="quote-next" class="text-button glass-module" type="button"><svg><use href="#i-refresh"/></svg><span>换一句</span></button></footer>
   </div>
