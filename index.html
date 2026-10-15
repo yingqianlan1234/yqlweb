@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>启页 · 你的上网起点</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23365f91'/%3E%3Cpath d='M12 28V12h16M12 28l16-16M20 28h8v-8' stroke='white' fill='none' stroke-width='2.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=017a54f064e8">
-  <script src="./app.js?v=484b5f8a174d" defer></script>
+  <link rel="stylesheet" href="./style.css?v=8a1ec96590d7">
+  <script src="./app.js?v=14ec17c7e551" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -69,9 +69,9 @@
         </section>
         <section class="settings-section" aria-labelledby="appearance-title">
           <h3 id="appearance-title">外观</h3>
-          <p class="section-description">玻璃效果在启用壁纸时生效，调整后即时预览。</p>
-          <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>只模糊中间面板背后的壁纸</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">24 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="24"></span></label>
-          <label class="setting-row background-adjustment" for="setting-glass-transparency"><span><strong>面板透明度</strong><small>浅色最高 36%，深色最高 24%，保持文字清晰</small></span><span class="range-control"><output id="glass-transparency-value" for="setting-glass-transparency">36%</output><input id="setting-glass-transparency" type="range" min="0" max="36" step="1" value="36"></span></label>
+          <p class="section-description">启用壁纸后，顶部、中间与底部共用玻璃效果，调整后即时预览。</p>
+          <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>统一调整三个面板背后的壁纸</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">24 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="24"></span></label>
+          <label class="setting-row background-adjustment" for="setting-glass-transparency"><span><strong>面板透明度</strong><small>浅色最高 50%，深色最高 42%，文字自动适配</small></span><span class="range-control"><output id="glass-transparency-value" for="setting-glass-transparency">36%</output><input id="setting-glass-transparency" type="range" min="0" max="50" step="1" value="36"></span></label>
           <label class="setting-row" for="setting-accent-color"><span><strong>强调色</strong><small>用于按钮、选中状态与焦点提示</small></span><input id="setting-accent-color" class="color-control" type="color" value="#365f91"></label>
           <button id="appearance-reset" class="text-button" type="button">恢复默认外观</button>
         </section>
