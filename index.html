@@ -8,7 +8,7 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg">
-  <link rel="stylesheet" href="./style.css?v=04dbd078af25">
+  <link rel="stylesheet" href="./style.css?v=26e33ea7753a">
   <script src="./app.js?v=d37664f7a2a4" defer></script>
 </head>
 <body>
@@ -31,17 +31,18 @@
   </defs></svg>
   <div class="shell">
     <header class="topbar">
-      <a class="brand" href="./" aria-label="栖点首页"><span class="brand-mark"><svg aria-hidden="true"><use href="#i-compass"/></svg></span><span>栖点<span class="brand-dot">.</span></span></a>
-      <div class="date-line"><time id="clock"></time><div class="calendar-line"><time id="date"></time><span id="weekday" class="weekday"></span></div></div>
-      <div class="top-actions"><button id="theme-toggle" class="icon-button" type="button" aria-label="切换到深色模式" title="切换到深色模式"><svg><use href="#i-moon"/></svg></button><button id="settings-open" class="settings-button" type="button" aria-haspopup="dialog" aria-controls="settings-dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
+      <a class="brand glass-module" href="./" aria-label="栖点首页"><span class="brand-mark"><svg aria-hidden="true"><use href="#i-compass"/></svg></span><span>栖点<span class="brand-dot">.</span></span></a>
+      <div class="date-line glass-module"><time id="clock"></time><div class="calendar-line"><time id="date"></time><span id="weekday" class="weekday"></span></div></div>
     </header>
+    <div class="top-actions floating-actions glass-module" role="group" aria-label="页面设置"><button id="theme-toggle" class="icon-button" type="button" aria-label="切换到深色模式" title="切换到深色模式"><svg><use href="#i-moon"/></svg></button><button id="settings-open" class="settings-button" type="button" aria-haspopup="dialog" aria-controls="settings-dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
     <main>
       <section class="search-section" aria-labelledby="greeting">
-        <h1 id="greeting">今天，想去哪里？</h1>
+        <div class="intro-module glass-module"><h1 id="greeting">今天，想去哪里？</h1>
         <p class="intro">从一次搜索，到每个常去的地方。</p>
+        </div>
         <form id="search-form" role="search">
-          <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button></div>
-          <fieldset class="engines"><legend class="sr-only">选择搜索引擎</legend><span class="engine-track" aria-hidden="true"><span class="engine-indicator"></span></span>
+          <div class="search-box glass-module"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button></div>
+          <fieldset class="engines glass-module"><legend class="sr-only">选择搜索引擎</legend><span class="engine-track" aria-hidden="true"><span class="engine-indicator"></span></span>
             <label class="engine"><input type="radio" name="engine" value="baidu" checked><span>百度</span></label>
             <label class="engine"><input type="radio" name="engine" value="bing"><span>必应</span></label>
             <label class="engine"><input type="radio" name="engine" value="google"><span>Google</span></label>
@@ -51,13 +52,13 @@
         </form>
       </section>
       <div class="dashboard-grid">
-      <section class="shortcuts-section" aria-labelledby="shortcuts-heading">
+      <section class="shortcuts-section glass-module" aria-labelledby="shortcuts-heading">
         <div class="section-heading"><h2 id="shortcuts-heading">常用网站 <span id="shortcut-count"></span></h2><div class="section-actions"><button id="add-shortcut" class="text-button" type="button"><svg><use href="#i-plus"/></svg>添加</button><button id="edit-toggle" class="text-button" type="button"><svg><use href="#i-edit"/></svg><span>管理</span></button></div></div>
         <div id="shortcuts" class="shortcuts"></div>
         <nav class="shortcut-pagination" aria-label="常用网站分页"><button id="sites-prev" class="text-button" type="button" aria-label="常用网站上一页" title="点击翻页；拖动图标时在这里停留可跨页">上一页</button><span id="sites-page" aria-live="polite"></span><button id="sites-next" class="text-button" type="button" aria-label="常用网站下一页" title="点击翻页；拖动图标时在这里停留可跨页">下一页</button></nav>
         <p id="empty-state" class="empty-state" hidden>还没有快捷入口，添加一个常去的网站吧。</p>
       </section>
-      <section class="hot-section" aria-labelledby="hot-heading">
+      <section class="hot-section glass-module" aria-labelledby="hot-heading">
         <div class="section-heading"><h2 id="hot-heading">今日热点</h2><button id="hot-refresh" class="icon-button" type="button" aria-label="刷新当前热榜"><svg><use href="#i-refresh"/></svg></button></div>
         <div class="hot-sources" role="group" aria-label="热点来源"><span class="engine-track" aria-hidden="true"><span class="engine-indicator hot-indicator"></span></span><button type="button" data-hot-source="douyin" aria-pressed="true">抖音</button><button type="button" data-hot-source="baidu" aria-pressed="false">百度</button><button type="button" data-hot-source="weibo" aria-pressed="false">微博</button></div>
         <p id="hot-status" class="hot-status" role="status">正在获取热点…</p>
@@ -65,9 +66,9 @@
         <div class="hot-meta"><span id="hot-updated"></span><a id="hot-open" href="https://www.douyin.com/hot" target="_blank" rel="noopener noreferrer">完整榜单 <svg aria-hidden="true"><use href="#i-out"/></svg></a></div>
       </section>
       </div>
-      <p class="keyboard-tip"><kbd>/</kbd> 快速搜索<span>·</span><kbd>Enter</kbd> 出发</p>
+      <p class="keyboard-tip glass-module"><kbd>/</kbd> 快速搜索<span>·</span><kbd>Enter</kbd> 出发</p>
     </main>
-    <footer class="quote-widget" aria-label="一言短句"><div class="quote-copy" aria-live="polite" aria-atomic="true"><p id="quote-text"></p><a id="quote-source" class="quote-source">栖点短句</a></div><button id="quote-next" class="text-button" type="button"><svg><use href="#i-refresh"/></svg><span>换一句</span></button></footer>
+    <footer class="quote-widget" aria-label="一言短句"><div class="quote-copy glass-module" aria-live="polite" aria-atomic="true"><p id="quote-text"></p><a id="quote-source" class="quote-source">栖点短句</a></div><button id="quote-next" class="text-button glass-module" type="button"><svg><use href="#i-refresh"/></svg><span>换一句</span></button></footer>
   </div>
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <div class="settings-panel">
@@ -82,8 +83,8 @@
         </section>
         <section class="settings-section" aria-labelledby="appearance-title">
           <h3 id="appearance-title">外观</h3>
-          <p class="section-description">启用壁纸后，顶部、中间与底部共用柔和玻璃效果，调整后即时预览。</p>
-          <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>统一调整三个面板背后的壁纸</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">24 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="24"></span></label>
+          <p class="section-description">启用壁纸后，各独立模块共用柔和玻璃效果，调整后即时预览。</p>
+          <label class="setting-row background-adjustment" for="setting-glass-blur"><span><strong>玻璃模糊</strong><small>统一调整各模块背后的壁纸</small></span><span class="range-control"><output id="glass-blur-value" for="setting-glass-blur">24 px</output><input id="setting-glass-blur" type="range" min="0" max="40" step="1" value="24"></span></label>
           <label class="setting-row background-adjustment" for="setting-glass-transparency"><span><strong>面板透明度</strong><small>浅色最高 50%，深色最高 42%，文字自动适配</small></span><span class="range-control"><output id="glass-transparency-value" for="setting-glass-transparency">36%</output><input id="setting-glass-transparency" type="range" min="0" max="50" step="1" value="36"></span></label>
           <label class="setting-row" for="setting-accent-color"><span><strong>强调色</strong><small>用于按钮、选中状态与焦点提示</small></span><input id="setting-accent-color" class="color-control" type="color" value="#365f91"></label>
           <button id="appearance-reset" class="text-button" type="button">恢复默认外观</button>
