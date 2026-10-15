@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>启页 · 你的上网起点</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23365f91'/%3E%3Cpath d='M12 28V12h16M12 28l16-16M20 28h8v-8' stroke='white' fill='none' stroke-width='2.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=7e472e62b200">
-  <script src="./app.js?v=0c456b0bbacb" defer></script>
+  <link rel="stylesheet" href="./style.css?v=e876b06ec358">
+  <script src="./app.js?v=849f3e1765e8" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -70,7 +70,7 @@
         <section class="settings-section" aria-labelledby="background-title">
           <h3 id="background-title">当前背景</h3>
           <p class="section-description">选择手机或电脑里的图片，打造自己的起始页。图片仅保存在此浏览器，不会上传。</p>
-          <label class="setting-row" for="setting-background-fit"><span><strong>背景显示</strong><small>完整显示保留全图，比例不同时会留边</small></span><select id="setting-background-fit"><option value="contain">完整显示</option><option value="cover">铺满裁切</option></select></label>
+          <label class="setting-row" for="setting-background-fit"><span><strong>背景显示</strong><small>铺满不留边；完整显示保留全图但可能留边</small></span><select id="setting-background-fit"><option value="cover">铺满裁切</option><option value="contain">完整显示（留边）</option></select></label>
           <label class="setting-row background-adjustment" for="setting-background-brightness"><span><strong>壁纸亮度</strong><small>只调整壁纸，不影响文字区域</small></span><span class="range-control"><output id="background-brightness-value" for="setting-background-brightness">100%</output><input id="setting-background-brightness" type="range" min="25" max="150" step="5" value="100"></span></label>
           <label class="setting-row background-adjustment" for="setting-background-blur"><span><strong>背景模糊</strong><small>数值越低，画面越清晰</small></span><span class="range-control"><output id="background-blur-value" for="setting-background-blur">0 px</output><input id="setting-background-blur" type="range" min="0" max="12" step="1" value="0"></span></label>
           <div id="background-video-settings" hidden>
