@@ -20,10 +20,10 @@ const fs = require('node:fs'), path = require('node:path'), os = require('node:o
   await page.waitForSelector('#query'); assert.equal(page.url(), 'chrome-extension://' + id + '/index.html');
   assert.equal(await page.locator('script[src^="https:"]').count(), 0);
   await page.evaluate(() => chrome.bookmarks.create({ title: '扩展测试书签', url: 'https://example.com/' }));
-  await page.locator('#settings-open').click(); await page.locator('#bookmarks-connect').click();
+  await page.locator('#settings-open').click(); await page.locator('#settings-tab-sites').click(); await page.locator('#bookmarks-connect').click();
   await page.waitForFunction(() => document.querySelector('#bookmarks-status').textContent.includes('已连接'));
   await page.locator('.bookmark-row').filter({ hasText: '扩展测试书签' }).locator('input').check(); await page.locator('#bookmarks-add').click();
-  await page.locator('#setting-newtab').check(); await page.locator('#settings-close').click(); await page.waitForTimeout(260);
+  await page.locator('#settings-tab-search').click(); await page.locator('#setting-newtab').check(); await page.locator('#settings-close').click(); await page.waitForTimeout(260);
   assert.equal(await page.locator('.site-name').filter({ hasText: '扩展测试书签' }).count(), 1);
   await page.locator('#query').fill('天气'); await page.waitForFunction(() => document.querySelector('.assist-choice')?.textContent.includes('天气预报')); assert.equal(lookups.length, 1); assert.equal(lookups[0].searchParams.get('JsonCallback'), null);
   const popupReady = page.waitForEvent('popup'); await page.locator('.assist-choice').first().click(); const popup = await popupReady; await popup.waitForLoadState(); assert.equal(new URL(popup.url()).searchParams.get('wd'), '天气预报'); await popup.close(); await page.bringToFront();
