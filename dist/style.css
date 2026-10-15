@@ -173,7 +173,8 @@ h2{font-weight:600;letter-spacing:-.015em}
 .settings-button{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
 .search-box,.has-background .search-box{border-radius:20px}
 body:not(.has-background) .search-box{box-shadow:inset 0 0 0 1px var(--line),0 4px 18px rgb(32 28 23 / .025)}
-.search-focused .search-box{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 0 22px 6px color-mix(in srgb,var(--accent) 24%,transparent)}
+.search-box{transition:background-color var(--ease),outline-color var(--travel),box-shadow var(--travel)}
+body.search-focused .search-box{box-shadow:inset 0 0 0 1px var(--line),0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent),0 0 32px 8px color-mix(in srgb,var(--accent) 45%,transparent)}
 .engine-picker{border-radius:999px}.engine-picker::before,.engine-toggle{border-radius:inherit}
 .engine-picker .engine-indicator,.engine-picker .engine span,.source-picker .hot-sources button{border-radius:999px}
 .site-badge{color:#91432e}
