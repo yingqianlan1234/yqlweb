@@ -249,8 +249,8 @@ let backgroundWindowFocused = document.hasFocus();
 let backgroundResumeTime = 0;
 let backgroundMediaVersion = 0;
 let backgroundRestorePending = false;
-let backgroundFit = read('backgroundFit', 'contain');
-if (!['contain', 'cover'].includes(backgroundFit)) backgroundFit = 'contain';
+let backgroundFit = read('backgroundFit', 'cover');
+if (!['contain', 'cover'].includes(backgroundFit)) backgroundFit = 'cover';
 function applyBackgroundFit() {
   document.documentElement.style.setProperty('--background-fit', backgroundFit);
   $('#setting-background-fit').value = backgroundFit;
@@ -284,7 +284,7 @@ $('#setting-background-blur').addEventListener('input', event => { backgroundBlu
 $('#setting-background-speed').addEventListener('change', event => { backgroundSpeed = Number(event.target.value); applyBackgroundParameters(); save('backgroundSpeed', backgroundSpeed); });
 $('#setting-background-playing').addEventListener('change', event => { backgroundPlaying = event.target.checked; save('backgroundPlaying', backgroundPlaying); syncBackgroundPlayback(); });
 $('#background-parameters-reset').addEventListener('click', () => {
-  backgroundFit = 'contain'; backgroundBrightness = 100; backgroundBlur = 0; backgroundSpeed = 1; backgroundPlaying = true;
+  backgroundFit = 'cover'; backgroundBrightness = 100; backgroundBlur = 0; backgroundSpeed = 1; backgroundPlaying = true;
   applyBackgroundFit(); applyBackgroundParameters(); syncBackgroundPlayback();
   save('backgroundFit', backgroundFit); save('backgroundBrightness', backgroundBrightness); save('backgroundBlur', backgroundBlur); save('backgroundSpeed', backgroundSpeed); save('backgroundPlaying', backgroundPlaying);
 });
