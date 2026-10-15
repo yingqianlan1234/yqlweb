@@ -87,6 +87,9 @@ main{max-width:1120px;width:min(100%,1120px);flex:0 0 auto}h1{font-size:40px}.in
 /* 外层只负责原有位置，各功能用独立表面承托，伪元素不占布局空间。 */
 .glass-module{position:relative;isolation:isolate;--module-inset:-6px -12px}
 .glass-module::before{content:"";position:absolute;inset:var(--module-inset);z-index:-1;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 20px rgb(7 18 28 / .04);pointer-events:none}
+/* 默认背景保持平面布局，自定义壁纸使用独立玻璃表面。 */
+body:not(.has-background) .glass-module::before{background:transparent;border-color:transparent;box-shadow:none}
+body:not(.has-background) .search-box::before{background:var(--surface)}
 .has-background :is(.topbar,main,.shell>.quote-widget){background:transparent;border:1px solid transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 .brand{--module-inset:-8px -12px}.date-line{--module-inset:-6px -12px}.intro-module{width:fit-content;max-width:100%;--module-inset:-4px -12px}.search-box{--module-inset:0}.search-box.glass-module{background:transparent}.engines{width:fit-content;max-width:100%;--module-inset:0 -4px}
 .keyboard-tip{width:fit-content;margin-left:auto;margin-right:auto;--module-inset:-4px -10px}.quote-copy{--module-inset:-8px}.quote-widget>#quote-next{--module-inset:0}
