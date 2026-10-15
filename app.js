@@ -213,7 +213,7 @@ updateSearchHint();
 $('#search-form').addEventListener('submit', event => {
   event.preventDefault();
   if (window.QidianSearch?.isComposing()) return;
-  try { const target = destination($('#query').value, selectedEngine); if (target) { if (!target.direct) window.QidianSearch?.record($('#query').value); window.QidianSearch?.close(); if (newTab) window.open(target.url, '_blank', 'noopener,noreferrer'); else window.location.assign(target.url); } }
+  try { const target = destination($('#query').value, selectedEngine); if (target) { if (!target.direct) window.QidianSearch?.record($('#query').value); window.QidianSearch?.close(); if (newTab) window.open(target.url, '_blank', 'noopener,noreferrer'); else window.location.assign(target.url); if (searchBox.contains(document.activeElement)) document.activeElement.blur(); setSearchFocused(false); } }
   catch (error) { $('#search-error').textContent = error.message; $('#search-error').hidden = false; }
 });
 document.addEventListener('keydown', event => {
@@ -229,9 +229,12 @@ let sitesPage = 0;
 let shortcutDrag = null;
 const siteCategory = site => typeof site.category === 'string' ? site.category.trim().slice(0, 24) : '';
 const CATEGORY_PRESETS = ['工作', '学习', '娱乐', '工具', '社交', '生活'];
-function fillSiteCategories(select, value = '') {
+function siteCategoryOptions() {
   const names = [...new Set([...CATEGORY_PRESETS, ...sites.map(siteCategory).filter(Boolean)])];
-  select.replaceChildren(...[['', '未分类'], ...names.map(name => [name, name]), ['*new*', '新建分类…']].map(([value, label]) => {
+  return [['', '未分类'], ...names.map(name => [name, name]), ['*new*', '新建分类…']];
+}
+function fillSiteCategories(select, value = '') {
+  select.replaceChildren(...siteCategoryOptions().map(([value, label]) => {
     const option = document.createElement('option'); option.value = value; option.textContent = label; return option;
   }));
   select.value = value;
@@ -443,19 +446,63 @@ function resetSiteForm() {
   $('#form-title').textContent = '添加网站'; $('#add-form [type=submit]').textContent = '添加网站'; $('#cancel-edit').hidden = true;
 }
 function persistSites() { save('sites', sites); renderSites(); renderSiteManager(); if (bookmarkEntries.length) renderBookmarks(); }
+let managerCategoryAnchor = null;
+let managerCategoryScroll = 0;
+const managerCategoryMenu = $('#manager-category-menu');
+function closeManagerCategoryMenu(returnFocus = false) {
+  const anchor = managerCategoryAnchor; managerCategoryAnchor = null;
+  anchor?.setAttribute('aria-expanded', 'false');
+  if (managerCategoryMenu.matches(':popover-open')) managerCategoryMenu.hidePopover();
+  if (returnFocus && anchor?.isConnected) anchor.focus({ preventScroll: true });
+}
+function openManagerCategoryMenu(anchor, site, index, row) {
+  if (managerCategoryAnchor === anchor && managerCategoryMenu.matches(':popover-open')) { closeManagerCategoryMenu(true); return; }
+  closeManagerCategoryMenu(); managerCategoryAnchor = anchor;
+  managerCategoryMenu.replaceChildren(...siteCategoryOptions().map(([value, label]) => {
+    const option = document.createElement('button'); option.type = 'button'; option.dataset.value = value; option.tabIndex = -1;
+    option.setAttribute('role', 'menuitemradio'); option.setAttribute('aria-checked', String(value === siteCategory(site)));
+    const text = document.createElement('span'); text.textContent = label; option.append(text);
+    if (value === siteCategory(site)) { const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); icon.setAttribute('aria-hidden', 'true'); const path = document.createElementNS(icon.namespaceURI, 'path'); path.setAttribute('d', 'M5 10l3 3 7-7'); icon.append(path); option.append(icon); }
+    option.addEventListener('click', () => {
+      closeManagerCategoryMenu();
+      if (value === '*new*') { row.querySelector('[data-action=edit]').click(); $('#site-category').value = '*new*'; syncNewCategoryField(); $('#new-category-name').value = ''; $('#new-category-name').focus(); return; }
+      site.category = value; persistSites(); $('#site-manager').children[index]?.querySelector('.manager-category').focus({ preventScroll: true }); notify('已归入' + (value || '未分类'));
+    }); return option;
+  }));
+  const rect = anchor.getBoundingClientRect(), bounds = $('.settings-content').getBoundingClientRect();
+  managerCategoryScroll = $('.settings-content').scrollTop;
+  const width = Math.min(256, bounds.width - 32), below = bounds.bottom - rect.bottom - 6, above = rect.top - bounds.top - 6;
+  const downward = below >= Math.min(280, above);
+  managerCategoryMenu.style.width = width + 'px'; managerCategoryMenu.style.maxHeight = Math.max(64, Math.min(304, downward ? below : above)) + 'px';
+  managerCategoryMenu.style.left = Math.max(bounds.left + 16, Math.min(rect.left, bounds.right - width - 16)) + 'px';
+  managerCategoryMenu.style.top = (rect.bottom + 6) + 'px';
+  anchor.setAttribute('aria-expanded', 'true'); managerCategoryMenu.showPopover();
+  if (!downward) managerCategoryMenu.style.top = (rect.top - managerCategoryMenu.getBoundingClientRect().height - 6) + 'px';
+  const selected = managerCategoryMenu.querySelector('[aria-checked=true]'); selected?.focus({ preventScroll: true }); selected?.scrollIntoView({ block: 'nearest' });
+}
+managerCategoryMenu.addEventListener('toggle', () => { if (!managerCategoryMenu.matches(':popover-open')) { managerCategoryAnchor?.setAttribute('aria-expanded', 'false'); managerCategoryAnchor = null; } });
+managerCategoryMenu.addEventListener('keydown', event => {
+  if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeManagerCategoryMenu(true); return; }
+  if (event.key === 'Tab') { closeManagerCategoryMenu(true); return; }
+  const options = [...managerCategoryMenu.querySelectorAll('button')], index = options.indexOf(document.activeElement);
+  const next = event.key === 'ArrowDown' ? (index + 1) % options.length : event.key === 'ArrowUp' ? (index + options.length - 1) % options.length : event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : -1;
+  if (next >= 0) { event.preventDefault(); options[next].focus({ preventScroll: true }); options[next].scrollIntoView({ block: 'nearest' }); }
+});
+$('.settings-content').addEventListener('scroll', event => { if (Math.abs(event.target.scrollTop - managerCategoryScroll) > 1) closeManagerCategoryMenu(); }, { passive: true });
+window.addEventListener('resize', () => closeManagerCategoryMenu(), { passive: true });
 function renderSiteManager() {
+  closeManagerCategoryMenu();
   $('#site-manager').replaceChildren(); $('#manage-count').textContent = sites.length + ' 个'; $('#manager-empty').hidden = sites.length > 0;
   sites.forEach((site, index) => {
     const row = document.createElement('div'); row.className = 'manager-row';
     const copy = document.createElement('div'); copy.className = 'manager-copy';
     const name = document.createElement('strong'); name.textContent = site.name;
-    const domain = document.createElement('small'); domain.textContent = (siteCategory(site) || '未分类') + ' · ' + websiteUrl(site.url).hostname;
-    const category = document.createElement('select'); category.className = 'manager-category'; category.setAttribute('aria-label', '分类：' + site.name);
-    fillSiteCategories(category, siteCategory(site));
-    category.addEventListener('change', () => {
-      if (category.value === '*new*') { row.querySelector('[data-action=edit]').click(); $('#site-category').value = '*new*'; syncNewCategoryField(); $('#new-category-name').focus(); return; }
-      site.category = category.value; persistSites(); $('#site-manager').children[index]?.querySelector('.manager-category').focus(); notify('已归入' + (site.category || '未分类'));
-    });
+    const domain = document.createElement('small'); domain.textContent = websiteUrl(site.url).hostname;
+    const category = document.createElement('button'); category.type = 'button'; category.className = 'manager-category'; category.setAttribute('aria-label', '分类：' + site.name); category.setAttribute('aria-haspopup', 'menu'); category.setAttribute('aria-expanded', 'false'); category.setAttribute('aria-controls', 'manager-category-menu');
+    const categoryText = document.createElement('span'); categoryText.textContent = siteCategory(site) || '未分类'; category.append(categoryText);
+    const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); const use = document.createElementNS(chevron.namespaceURI, 'use'); use.setAttribute('href', '#i-down'); chevron.setAttribute('aria-hidden', 'true'); chevron.append(use); category.append(chevron);
+    category.addEventListener('click', () => openManagerCategoryMenu(category, site, index, row));
+    category.addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); openManagerCategoryMenu(category, site, index, row); } });
     copy.append(name, domain, category); row.append(copy);
     const actions = document.createElement('div'); actions.className = 'manager-actions';
     const specs = [
@@ -488,6 +535,7 @@ function renderSiteManager() {
 }
 let currentSettingsTab = 'appearance';
 function selectSettingsTab(value, focus = false) {
+  closeManagerCategoryMenu();
   currentSettingsTab = value;
   document.querySelectorAll('.settings-nav [role=tab]').forEach(tab => { const selected = tab.dataset.settingsTab === value; tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1; if (selected && focus) tab.focus(); });
   document.querySelectorAll('.settings-category-panel').forEach(panel => { panel.hidden = panel.id !== 'settings-category-' + value; });
