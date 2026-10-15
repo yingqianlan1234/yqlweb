@@ -7,9 +7,9 @@ colors:
   fg: "#222c30"
   muted: "#626e74"
   line: "#dce2e5"
-  accent: "#2b604d"
+  accent: "#365f91"
   accent-text: "#ffffff"
-  soft: "#e7efe9"
+  soft: "#e7eef8"
   hover: "#edf0f2"
   error: "#a32323"
   dark-bg: "#161c1b"
@@ -17,9 +17,9 @@ colors:
   dark-fg: "#e4eae6"
   dark-muted: "#a5b3ac"
   dark-line: "#404d47"
-  dark-accent: "#add6bc"
-  dark-accent-text: "#173b28"
-  dark-soft: "#2d4035"
+  dark-accent: "#acccf5"
+  dark-accent-text: "#15324e"
+  dark-soft: "#293b50"
   dark-hover: "#2a3430"
   dark-error: "#ffb4ad"
 typography:
@@ -51,7 +51,7 @@ components:
 
 ## Overview
 
-遵循用户确认的简洁浅色方向，支持深色切换。中性底色、搜索优先、低装饰密度；绿色用于操作与少量识别点缀。实际实现以 `dist/style.css` 为准。
+遵循用户确认的简洁浅色方向，支持深色切换。中性底色、搜索优先、低装饰密度；蓝色用于操作与少量识别点缀。实际实现以 `dist/style.css` 为准。
 
 ## Colors
 
