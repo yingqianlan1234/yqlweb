@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>启页 · 你的上网起点</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23365f91'/%3E%3Cpath d='M12 28V12h16M12 28l16-16M20 28h8v-8' stroke='white' fill='none' stroke-width='2.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=8a1ec96590d7">
-  <script src="./app.js?v=14ec17c7e551" defer></script>
+  <link rel="stylesheet" href="./style.css?v=2498d92299a5">
+  <script src="./app.js?v=e0eff63bb139" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -25,11 +25,12 @@
     <symbol id="i-settings" viewBox="0 0 24 24"><path d="m9.5 3-.6 2.1-1.7 1-2.1-.5-2.5 4.3 1.5 1.6v2L2.6 15l2.5 4.3 2.1-.5 1.7 1 .6 2.2h5l.6-2.2 1.7-1 2.1.5 2.5-4.3-1.5-1.5v-2l1.5-1.6-2.5-4.3-2.1.5-1.7-1L14.5 3Z"/><circle cx="12" cy="12.5" r="3"/></symbol>
     <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></symbol>
     <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 10 6 6 6-6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17"/></symbol>
   </defs></svg>
   <div class="shell">
     <header class="topbar">
       <a class="brand" href="./" aria-label="启页首页"><span class="brand-mark"><svg><use href="#i-out"/></svg></span><span>启页<span class="brand-dot">.</span></span></a>
-      <div class="date-line"><span id="date"></span><span class="separator">/</span><time id="clock"></time></div>
+      <div class="date-line"><time id="clock"></time><div class="calendar-line"><time id="date"></time><span id="weekday" class="weekday"></span></div></div>
       <div class="top-actions"><button id="theme-toggle" class="icon-button" type="button" aria-label="切换到深色模式" title="切换到深色模式"><svg><use href="#i-moon"/></svg></button><button id="settings-open" class="settings-button" type="button" aria-haspopup="dialog" aria-controls="settings-dialog"><svg><use href="#i-settings"/></svg>设置</button></div>
     </header>
     <main>
@@ -54,7 +55,7 @@
       </section>
       <p class="keyboard-tip"><kbd>/</kbd> 快速搜索<span>·</span><kbd>Enter</kbd> 出发</p>
     </main>
-    <footer><span>启页 · 把网络，调成你的习惯。</span><span class="footer-storage">偏好仅保存在此浏览器</span></footer>
+    <footer class="quote-widget" aria-label="每日短句"><div class="quote-copy" aria-live="polite" aria-atomic="true"><p id="quote-text"></p><p class="quote-source">启页短句</p></div><button id="quote-next" class="text-button" type="button"><svg><use href="#i-refresh"/></svg><span>换一句</span></button></footer>
   </div>
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <div class="settings-panel">
