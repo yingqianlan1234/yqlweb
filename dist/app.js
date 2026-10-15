@@ -222,8 +222,8 @@ function updateDate() {
 }
 updateDate(); setInterval(updateDate, 30000);
 
-// 图片以 Blob 保存在 IndexedDB，不占用收藏和偏好的 localStorage 空间。
-function backgroundStorage(action, value) {
+// 背景 Blob 和已授权的目录句柄保存在 IndexedDB，彼此使用独立键。
+function backgroundStorage(action, value, key = 'custom') {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('yql-background', 1);
     request.onupgradeneeded = () => request.result.createObjectStore('images');
@@ -231,11 +231,13 @@ function backgroundStorage(action, value) {
     request.onblocked = () => reject(new Error('背景存储暂时不可用'));
     request.onsuccess = () => {
       const db = request.result;
-      const transaction = db.transaction('images', action === 'read' ? 'readonly' : 'readwrite');
-      const store = transaction.objectStore('images');
-      const operation = action === 'read' ? store.get('custom') : action === 'write' ? store.put(value, 'custom') : store.delete('custom');
-      transaction.oncomplete = () => { db.close(); resolve(operation.result); };
-      transaction.onerror = transaction.onabort = () => { db.close(); reject(transaction.error); };
+      try {
+        const transaction = db.transaction('images', action === 'read' ? 'readonly' : 'readwrite');
+        const store = transaction.objectStore('images');
+        const operation = action === 'read' ? store.get(key) : action === 'write' ? store.put(value, key) : store.delete(key);
+        transaction.oncomplete = () => { db.close(); resolve(operation.result); };
+        transaction.onerror = transaction.onabort = () => { db.close(); reject(transaction.error); };
+      } catch (error) { db.close(); reject(error); }
     };
   });
 }
@@ -243,6 +245,7 @@ let backgroundUrl = null;
 let backgroundPreviewUrl = null;
 let backgroundBusy = false;
 let libraryScanBusy = false;
+let libraryDirectoryBusy = false;
 let currentLibraryPath = '';
 let backgroundVideoActive = false;
 let backgroundWindowFocused = document.hasFocus();
@@ -363,7 +366,7 @@ function setBackgroundBusy(busy) {
   $('#background-choose').disabled = busy;
   $('#background-reset').disabled = busy || !(backgroundUrl || backgroundVideoActive);
   $('#background-choose').textContent = busy ? '正在处理…' : '选择图片';
-  $('#library-choose').disabled = busy || libraryScanBusy;
+  for (const id of ['#library-choose', '#library-reconnect', '#library-forget']) $(id).disabled = busy || libraryScanBusy || libraryDirectoryBusy;
   document.querySelectorAll('.library-item').forEach(button => { button.disabled = busy || button.dataset.available === 'false'; });
 }
 async function prepareBackgroundImage(file, name = file.name) {
@@ -490,9 +493,88 @@ async function selectLibraryWallpaper(entry) {
   } catch (error) { $('#library-status').textContent = error.name === 'QuotaExceededError' ? '本地存储空间不足，请选择较小的壁纸。原背景保持不变。' : `应用失败：${error.message || '无法读取文件或保存到浏览器'}。原背景保持不变。`; }
   finally { setBackgroundBusy(false); }
 }
-$('#library-choose').addEventListener('click', () => {
-  if (!('webkitdirectory' in $('#library-folder'))) { $('#library-status').textContent = '此浏览器不支持选择文件夹，请在电脑上的新版 Chrome 或 Edge 中使用。'; return; }
-  $('#library-folder').click();
+const canRememberLibrary = typeof window.showDirectoryPicker === 'function';
+$('#library-brave-help').hidden = canRememberLibrary || !navigator.brave;
+let libraryDirectory = null;
+function showRememberedLibrary(granted) {
+  $('#library-directory-name').hidden = !libraryDirectory;
+  $('#library-directory-name').textContent = libraryDirectory ? `已记住目录：${libraryDirectory.name}` : '';
+  $('#library-reconnect').hidden = !libraryDirectory;
+  $('#library-reconnect').textContent = granted ? '刷新壁纸库' : '授权已保存目录';
+  $('#library-forget').hidden = !libraryDirectory;
+}
+async function loadLibraryDirectory() {
+  libraryDirectoryBusy = true; setBackgroundBusy(backgroundBusy);
+  $('#library-status').textContent = '正在读取已授权的本地壁纸目录…';
+  try {
+    const files = [];
+    async function collect(directory, prefix) {
+      for await (const [name, entry] of directory.entries()) {
+        const path = prefix + '/' + name;
+        if (entry.kind === 'directory') await collect(entry, path);
+        else { const file = await entry.getFile(); Object.defineProperty(file, 'webkitRelativePath', { value: path }); files.push(file); }
+      }
+    }
+    await collect(libraryDirectory, libraryDirectory.name);
+    await readWallpaperLibrary(files); showRememberedLibrary(true);
+  } catch {
+    showRememberedLibrary(false);
+    $('#library-status').textContent = '无法读取已记住的目录。请重新授权；目录已移动或删除时，请重新选择。已选背景保留。';
+  } finally { libraryDirectoryBusy = false; setBackgroundBusy(backgroundBusy); }
+}
+$('#library-choose').addEventListener('click', async () => {
+  if (!canRememberLibrary) {
+    if (!('webkitdirectory' in $('#library-folder'))) { $('#library-status').textContent = '此浏览器不支持选择文件夹，请在电脑上的新版 Chrome 或 Edge 中使用。'; return; }
+    $('#library-folder').click(); return;
+  }
+  libraryDirectoryBusy = true; setBackgroundBusy(backgroundBusy);
+  try {
+    const directory = await window.showDirectoryPicker({ id: 'wallpaper-library', mode: 'read' });
+    libraryDirectory = directory; showRememberedLibrary(true);
+    let remembered = true;
+    try { await backgroundStorage('write', directory, 'library-directory'); } catch { remembered = false; }
+    await loadLibraryDirectory();
+    if (!remembered) $('#library-status').textContent += ' 本次可以浏览，但目录未能记住，刷新后请重新选择。';
+  } catch (error) {
+    if (error.name !== 'AbortError') $('#library-status').textContent = '未能打开文件夹。请检查浏览器的目录读取权限后重试。';
+  } finally { libraryDirectoryBusy = false; setBackgroundBusy(backgroundBusy); }
 });
+$('#library-reconnect').addEventListener('click', async () => {
+  if (!libraryDirectory) return;
+  libraryDirectoryBusy = true; setBackgroundBusy(backgroundBusy);
+  try {
+    const permission = await libraryDirectory.requestPermission({ mode: 'read' });
+    if (permission === 'granted') await loadLibraryDirectory();
+    else $('#library-status').textContent = '目录尚未获得读取权限。可再次点击授权，或选择其他文件夹。已选背景保留。';
+  } catch { $('#library-status').textContent = '未能重新授权，请再次授权或重新选择文件夹。'; }
+  finally { libraryDirectoryBusy = false; setBackgroundBusy(backgroundBusy); }
+});
+$('#library-forget').addEventListener('click', async () => {
+  libraryDirectoryBusy = true; setBackgroundBusy(backgroundBusy);
+  try {
+    await backgroundStorage('delete', undefined, 'library-directory');
+    libraryDirectory = null; showRememberedLibrary(false);
+    $('#library-results').replaceChildren(); libraryPreviewUrls.forEach(url => URL.revokeObjectURL(url)); libraryPreviewUrls = []; wallpaperLibrary = [];
+    $('#library-search').value = ''; $('#library-search').disabled = true;
+    $('#library-status').textContent = '已忘记目录，已选背景保留。本地壁纸文件没有删除。';
+  } catch { $('#library-status').textContent = '未能忘记目录，请检查浏览器的网站存储权限后重试。'; }
+  finally { libraryDirectoryBusy = false; setBackgroundBusy(backgroundBusy); }
+});
+async function restoreLibraryDirectory() {
+  if (!canRememberLibrary) { $('#library-status').textContent = '文件只在本机读取，不会上传。此浏览器无法记住目录，刷新后需重新选择；已选背景保留。'; return; }
+  $('#library-choose').textContent = '选择并记住文件夹';
+  libraryDirectoryBusy = true; setBackgroundBusy(backgroundBusy);
+  try {
+    const directory = await backgroundStorage('read', undefined, 'library-directory');
+    if (!directory || directory.kind !== 'directory') return;
+    libraryDirectory = directory;
+    const granted = await directory.queryPermission({ mode: 'read' }) === 'granted';
+    showRememberedLibrary(granted);
+    if (granted) await loadLibraryDirectory();
+    else $('#library-status').textContent = '目录已记住。点击“授权已保存目录”即可继续，无需重新寻找文件夹。';
+  } catch { $('#library-status').textContent = '无法恢复目录记录，请重新选择文件夹。已选背景保留。'; }
+  finally { libraryDirectoryBusy = false; setBackgroundBusy(backgroundBusy); }
+}
+restoreLibraryDirectory();
 $('#library-folder').addEventListener('change', event => { const files = Array.from(event.target.files); event.target.value = ''; if (files.length) readWallpaperLibrary(files); });
 $('#library-search').addEventListener('input', renderWallpaperLibrary);

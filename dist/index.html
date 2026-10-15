@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>启页 · 你的上网起点</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23365f91'/%3E%3Cpath d='M12 28V12h16M12 28l16-16M20 28h8v-8' stroke='white' fill='none' stroke-width='2.5'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=e876b06ec358">
-  <script src="./app.js?v=849f3e1765e8" defer></script>
+  <link rel="stylesheet" href="./style.css?v=efe69f15c2de">
+  <script src="./app.js?v=0943d4f21b75" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -89,9 +89,11 @@
           <p class="section-description">选择本地壁纸文件夹，搜索后点击切换。视频直接播放；场景和网页壁纸使用预览图。</p>
           <p class="library-path-hint">常见目录：Steam 库 / steamapps / workshop / content / 431960，也可以选择单个壁纸项目文件夹。</p>
           <input id="library-folder" class="sr-only" type="file" webkitdirectory multiple tabindex="-1" aria-label="选择 Wallpaper Engine 壁纸文件夹">
-          <button id="library-choose" class="primary-button" type="button">选择壁纸文件夹</button>
+          <div class="background-actions"><button id="library-choose" class="primary-button" type="button">选择壁纸文件夹</button><button id="library-reconnect" class="text-button" type="button" hidden>授权已保存目录</button><button id="library-forget" class="text-button" type="button" hidden>忘记目录</button></div>
+          <p id="library-directory-name" class="library-path-hint" hidden></p>
           <label class="library-search" for="library-search"><span class="sr-only">搜索壁纸名称或文件夹编号</span><input id="library-search" type="search" placeholder="搜索壁纸名称或编号" disabled></label>
-          <p id="library-status" class="section-description" role="status">文件只在本机读取，不会上传。刷新后需重新选择目录，已选背景会保留。</p>
+          <p id="library-status" class="section-description" role="status">文件只在本机读取，不会上传。支持的浏览器可记住目录；权限失效时点一次授权即可继续。</p>
+          <p id="library-brave-help" class="library-path-hint" hidden>Brave 用户：在地址栏打开 <code>brave://flags/#file-system-access-api</code>，将 File System Access API 设为 Enabled，手动重启浏览器后即可使用记住目录功能。</p>
           <div id="library-results" class="library-results" aria-label="本地壁纸列表"></div>
         </section>
         <section id="manage-sites" class="settings-section" aria-labelledby="manage-title">
