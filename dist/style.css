@@ -105,3 +105,34 @@ body:not(.has-background) .search-box::before{background:var(--surface)}
 /* 标题和搜索共用一层玻璃，聚焦时仅模糊标题内容。 */
 #search-form{margin-top:0}.search-panel{--module-inset:-12px -12px -4px}.has-background .search-panel>.search-box{background:transparent}.has-background.search-focused .search-panel>.search-box{background:var(--bg)}.search-focused .intro-module{filter:blur(6px)}
 @media(max-width:600px){.search-panel{--module-inset:-8px -8px -6px}.search-focused .intro-module{filter:blur(4px)}}
+/* 壁纸上的阅读区域对齐，工具留在窗口边缘。 */
+.shell>.brand{position:fixed;top:22px;left:24px;z-index:15;transition:filter var(--travel),color var(--ease)}
+.search-focused .shell>.brand{filter:blur(6px)}
+.topbar>.date-line{flex-direction:column;gap:4px}
+#clock{font-size:48px;font-weight:500;letter-spacing:-.03em;line-height:1}
+.topbar .calendar-line{flex-direction:row;gap:8px;align-items:baseline;font-size:12px;letter-spacing:.02em}
+.has-background .search-box{border-radius:22px;outline:1px solid rgb(255 255 255 / .38);outline-offset:-1px}
+.search-submit{border-radius:50%;transition:transform var(--travel),background-color var(--ease),box-shadow var(--ease)}
+.search-submit svg{transition:transform var(--travel)}
+.hot-title-group{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.hot-title-group h2{flex-shrink:0}
+#hot-updated{font-size:11px;line-height:1.5;color:var(--muted);white-space:nowrap}
+#hot-updated:empty{display:none}
+.hot-meta{justify-content:flex-end}
+.refresh-button svg,#quote-next svg{width:18px;height:18px;stroke-width:1.8;transition:transform var(--travel)}
+.refresh-button:disabled svg{opacity:.6}
+.shell>.quote-widget,.has-background .shell>.quote-widget{width:fit-content;max-width:min(100%,640px);gap:10px;padding:8px 0;align-self:flex-start}
+#quote-text{font-size:13px;line-height:1.65}.quote-source{font-size:12px;margin-top:2px}
+#quote-next{width:36px;min-width:36px;height:36px;padding:8px}
+.has-background .wallpaper-ink{--fg:var(--wallpaper-text,#fff);--muted:var(--wallpaper-text,#fff);color:var(--fg);text-shadow:0 1px 3px var(--wallpaper-outline,#0009)}
+.has-background .wallpaper-ink button{color:inherit}
+@media(min-width:1001px){
+ .has-background .dashboard-grid{align-items:stretch}
+ .has-background .shortcuts-section{display:flex;flex-direction:column}
+ .has-background .shortcut-pagination{margin-top:auto}
+ .hot-section>.section-heading{gap:4px}.hot-title-group{gap:6px}
+}
+@media(hover:hover){.search-submit:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgb(0 0 0 / .14)}.search-submit:hover svg{transform:translateX(2px)}.refresh-button:hover svg{transform:rotate(55deg)}}
+@media(max-width:600px){.shell>.brand{top:22px;left:20px}.search-focused .shell>.brand{filter:blur(4px)}.topbar{grid-template-rows:44px 58px}#clock{font-size:38px}.has-background .search-box{border-radius:20px}.shell>.quote-widget,.has-background .shell>.quote-widget{max-width:100%;gap:6px}#quote-text{font-size:12px}.quote-source{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.search-submit:hover,.refresh-button:hover svg{transform:none}}
+[data-motion=off] .search-submit:hover,[data-motion=off] .refresh-button:hover svg{transform:none}

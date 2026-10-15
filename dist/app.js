@@ -649,11 +649,67 @@ let backgroundWindowFocused = document.hasFocus();
 let backgroundResumeTime = 0;
 let backgroundMediaVersion = 0;
 let backgroundRestorePending = false;
+let wallpaperInkFrame = 0;
+let wallpaperInkTimer;
+const wallpaperInkCanvas = document.createElement('canvas');
+const wallpaperInkContext = wallpaperInkCanvas.getContext('2d', { willReadFrequently: true });
+function scheduleWallpaperInk() {
+  if (document.hidden || (backgroundVideoActive && !backgroundWindowFocused)) {
+    clearTimeout(wallpaperInkTimer); cancelAnimationFrame(wallpaperInkFrame); wallpaperInkFrame = 0; return;
+  }
+  if (!wallpaperInkFrame) wallpaperInkFrame = requestAnimationFrame(updateWallpaperInk);
+}
+function updateWallpaperInk() {
+  wallpaperInkFrame = 0; clearTimeout(wallpaperInkTimer);
+  if (document.hidden || !document.body.classList.contains('has-background') || !wallpaperInkContext) return;
+  const video = $('#background-video');
+  const source = backgroundVideoActive && video.readyState >= 2 ? video : $('#background-thumbnail');
+  const width = source.videoWidth || source.naturalWidth;
+  const height = source.videoHeight || source.naturalHeight;
+  if (!width || !height) return;
+  const bounds = $('#page-background').getBoundingClientRect();
+  const scale = Math[backgroundFit === 'contain' ? 'min' : 'max'](bounds.width / width, bounds.height / height);
+  wallpaperInkCanvas.width = 160;
+  wallpaperInkCanvas.height = Math.max(1, Math.round(160 * bounds.height / bounds.width));
+  const ctx = wallpaperInkContext;
+  const ratio = wallpaperInkCanvas.width / bounds.width;
+  ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+  ctx.fillRect(0, 0, wallpaperInkCanvas.width, wallpaperInkCanvas.height);
+  try {
+    ctx.drawImage(source, (bounds.width - width * scale) / 2 * ratio, (bounds.height - height * scale) / 2 * ratio, width * scale * ratio, height * scale * ratio);
+    const pixels = ctx.getImageData(0, 0, wallpaperInkCanvas.width, wallpaperInkCanvas.height).data;
+    for (const element of document.querySelectorAll('.wallpaper-ink')) {
+      const rect = element.getBoundingClientRect(); let luminance = 0; let count = 0;
+      for (let row = 0; row < 4; row++) for (let col = 0; col < 16; col++) {
+        const x = Math.floor((rect.left - bounds.left + rect.width * (col + .5) / 16) * ratio);
+        const y = Math.floor((rect.top - bounds.top + rect.height * (row + .5) / 4) * ratio);
+        if (x < 0 || y < 0 || x >= wallpaperInkCanvas.width || y >= wallpaperInkCanvas.height) continue;
+        const index = (y * wallpaperInkCanvas.width + x) * 4;
+        // 与壁纸的 20% 遮罩及亮度设置一致，仅采样小画布，不逐帧读像素。
+        const rgb = [16, 28, 36].map((tint, channel) => Math.min(255, (pixels[index + channel] * .8 + tint * .2) * backgroundBrightness / 100));
+        luminance += colorLuminance(rgb); count++;
+      }
+      if (!count) continue;
+      const light = (luminance / count + .05) / .05 >= 1.05 / (luminance / count + .05);
+      element.style.setProperty('--wallpaper-text', light ? '#000' : '#fff');
+      element.style.setProperty('--wallpaper-outline', light ? '#fff9' : '#0009');
+    }
+  } catch { /* 媒体尚不可绘制时沿用上次文字颜色。 */ }
+  if (backgroundVideoActive && !video.paused && backgroundWindowFocused) wallpaperInkTimer = setTimeout(scheduleWallpaperInk, 2000);
+}
+$('#background-thumbnail').addEventListener('load', scheduleWallpaperInk);
+for (const event of ['loadeddata', 'seeked', 'playing', 'pause']) $('#background-video').addEventListener(event, scheduleWallpaperInk);
+window.addEventListener('resize', scheduleWallpaperInk);
+window.addEventListener('scroll', scheduleWallpaperInk, { passive: true });
+document.addEventListener('visibilitychange', scheduleWallpaperInk);
+const wallpaperInkResize = new ResizeObserver(scheduleWallpaperInk);
+document.querySelectorAll('.wallpaper-ink').forEach(element => wallpaperInkResize.observe(element));
 let backgroundFit = read('backgroundFit', 'cover');
 if (!['contain', 'cover'].includes(backgroundFit)) backgroundFit = 'cover';
 function applyBackgroundFit() {
   document.documentElement.style.setProperty('--background-fit', backgroundFit);
   $('#setting-background-fit').value = backgroundFit;
+  scheduleWallpaperInk();
 }
 applyBackgroundFit();
 $('#setting-background-fit').addEventListener('change', event => {
@@ -677,6 +733,7 @@ function applyBackgroundParameters() {
   $('#setting-background-playing').checked = backgroundPlaying;
   $('#background-video').defaultPlaybackRate = backgroundSpeed;
   $('#background-video').playbackRate = backgroundSpeed;
+  scheduleWallpaperInk();
 }
 applyBackgroundParameters();
 $('#setting-background-brightness').addEventListener('input', event => { backgroundBrightness = Number(event.target.value); applyBackgroundParameters(); save('backgroundBrightness', backgroundBrightness); });
@@ -707,6 +764,7 @@ function applyBackground(value) {
   currentLibraryPath = value?.libraryPath || '';
   document.querySelectorAll('.library-item').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.path === currentLibraryPath)));
   $('#background-reset').disabled = !value;
+  scheduleWallpaperInk();
 }
 const reducedBackgroundMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function unloadBackgroundVideo() {
