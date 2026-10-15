@@ -567,36 +567,34 @@ function moveHotIndicator() {
 }
 new ResizeObserver(moveHotIndicator).observe($('.hot-sources'));
 document.fonts.ready.then(moveHotIndicator);
-let hotItems = []; let hotPage = 0; let hotVersion = 0;
+let hotItems = []; let hotVersion = 0;
 const hotPending = new Map();
 function normalizeHot(source, data) {
   if (!Array.isArray(data.list)) throw new Error('榜单格式无效');
-  return data.list.filter(item => item && typeof item.title === 'string' && item.title.trim()).slice(0, 10).map(item => {
+  return data.list.filter(item => item && typeof item.title === 'string' && item.title.trim()).slice(0, 15).map(item => {
     const title = item.title.trim().slice(0, 200); const provider = HOT_SOURCES[source]; const url = typeof item.url === 'string' ? websiteUrl(item.url) : null;
     const safe = url && (url.hostname === provider.host || url.hostname.endsWith('.' + provider.host));
     return { title, url: safe ? url.href : provider.search + encodeURIComponent(title) };
   });
 }
 function renderHot() {
-  $('#hot-list').replaceChildren(); $('#hot-list').start = hotPage * 5 + 1;
-  for (const [index, item] of hotItems.slice(hotPage * 5, hotPage * 5 + 5).entries()) {
+  $('#hot-list').replaceChildren(); $('#hot-list').scrollTop = 0;
+  for (const [index, item] of hotItems.entries()) {
     const row = document.createElement('li'); const link = document.createElement('a'); link.className = 'hot-link'; link.href = item.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.title = item.title;
-    const rank = document.createElement('span'); rank.className = 'hot-rank'; rank.textContent = hotPage * 5 + index + 1; rank.setAttribute('aria-hidden', 'true');
+    const rank = document.createElement('span'); rank.className = 'hot-rank'; rank.textContent = index + 1; rank.setAttribute('aria-hidden', 'true');
     const title = document.createElement('span'); title.className = 'hot-title'; title.textContent = item.title;
     link.append(rank, title); row.append(link); $('#hot-list').append(row);
   }
-  $('#hot-prev').disabled = hotPage === 0; $('#hot-next').disabled = hotPage === 1 || hotItems.length <= 5;
-  $('#hot-page').textContent = hotItems.length ? `${hotPage + 1} / ${Math.ceil(hotItems.length / 5)}` : '— / —';
   if (hotItems.length) animateChange($('#hot-list'), [{ opacity: .35, clipPath: 'inset(0 0 8% 0)' }, { opacity: 1, clipPath: 'inset(0)' }]);
 }
 async function loadHot(source, force = false) {
-  const version = ++hotVersion; hotSource = source; hotPage = 0; hotItems = [];
+  const version = ++hotVersion; hotSource = source; hotItems = [];
   document.querySelectorAll('[data-hot-source]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.hotSource === source)));
   moveHotIndicator();
   $('#hot-open').href = HOT_SOURCES[source].board; $('#hot-list').setAttribute('aria-label', HOT_SOURCES[source].name + '热点排行');
   $('#hot-updated').textContent = ''; $('#hot-status').textContent = '正在获取' + HOT_SOURCES[source].name + '热点…'; $('#hot-refresh').disabled = true;
   let cached;
-  try { cached = JSON.parse(sessionStorage.getItem('yql.hot.' + source)); if (cached && Array.isArray(cached.data?.list)) { hotItems = normalizeHot(source, cached.data); } else cached = null; } catch { cached = null; }
+  try { cached = JSON.parse(sessionStorage.getItem('yql.hot15.' + source)); if (cached && Array.isArray(cached.data?.list)) { hotItems = normalizeHot(source, cached.data); } else cached = null; } catch { cached = null; }
   renderHot();
   try {
     const age = cached ? Date.now() - cached.at : Infinity;
@@ -605,13 +603,13 @@ async function loadHot(source, force = false) {
       if (!hotPending.has(source)) hotPending.set(source, fetchPublicJson('https://uapis.cn/api/v1/misc/hotboard?type=' + source).finally(() => hotPending.delete(source)));
       data = await hotPending.get(source);
       const items = normalizeHot(source, data); if (!items.length) throw new Error('榜单暂无内容');
-      try { sessionStorage.setItem('yql.hot.' + source, JSON.stringify({ at: Date.now(), data: { list: items, update_time: data.update_time } })); } catch {}
+      try { sessionStorage.setItem('yql.hot15.' + source, JSON.stringify({ at: Date.now(), data: { list: items, update_time: data.update_time } })); } catch {}
     }
     if (version !== hotVersion) return;
     hotItems = normalizeHot(source, data); if (!hotItems.length) throw new Error('榜单暂无内容');
     const updated = new Date(data.update_time);
     $('#hot-updated').textContent = Number.isFinite(updated.getTime()) ? '更新于 ' + new Intl.DateTimeFormat('zh-CN', { month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23' }).format(updated) : '';
-    $('#hot-status').textContent = `前 ${hotItems.length} 条 · 每页 5 条`; renderHot();
+    $('#hot-status').textContent = `前 ${hotItems.length} 条 · 滚动查看更多`; renderHot();
   } catch {
     if (version !== hotVersion) return;
     $('#hot-status').textContent = hotItems.length ? '暂时无法刷新，显示上次获取的榜单' : '暂时无法获取，点击刷新重试或查看完整榜单'; renderHot();
@@ -619,8 +617,6 @@ async function loadHot(source, force = false) {
 }
 document.querySelectorAll('[data-hot-source]').forEach(button => button.addEventListener('click', () => { save('hotSource', button.dataset.hotSource); loadHot(button.dataset.hotSource); }));
 $('#hot-refresh').addEventListener('click', () => loadHot(hotSource, true));
-$('#hot-prev').addEventListener('click', () => { hotPage = 0; renderHot(); });
-$('#hot-next').addEventListener('click', () => { hotPage = 1; renderHot(); });
 loadHot(hotSource);
 
 // 背景 Blob 和已授权的目录句柄保存在 IndexedDB，彼此使用独立键。
