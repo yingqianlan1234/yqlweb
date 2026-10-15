@@ -35,13 +35,14 @@ main{max-width:1120px;width:min(100%,1120px);flex:0 0 auto}h1{font-size:40px}.in
 /* 电脑端按窗口高度收紧留白，保留全部内容和按钮点击区域。 */
 @media(min-width:1001px){
   .topbar{height:68px;flex-shrink:0}.topbar>.date-line{gap:2px}#clock{font-size:26px}
-  main,.has-background main{margin-top:16px}.has-background .shell{padding-top:12px}
-  .has-background main{padding:24px;margin-bottom:16px}.shell>.quote-widget{margin-top:auto;padding-top:12px;padding-bottom:12px}.has-background .shell>.quote-widget{margin-bottom:12px}
+  .shell{row-gap:16px;padding-top:12px;padding-bottom:12px}.has-background .shell{padding-top:12px}
+  main,.has-background main{margin-top:auto;margin-bottom:auto}.has-background main{padding:24px}.shell>.quote-widget,.has-background .shell>.quote-widget{margin:0;padding-top:12px;padding-bottom:12px}
 }
+
 @media(min-width:1001px) and (max-height:1000px){
   .has-background main{padding:20px}h1{font-size:34px}#search-form{margin-top:16px}.search-box{min-height:66px;padding-top:6px;padding-bottom:6px}.search-section .engines{margin-top:10px}.search-section{margin-bottom:20px}.keyboard-tip{margin:12px 0 0}
   .hot-section{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:center}.hot-section>.section-heading{grid-column:1;grid-row:1;margin:0}.hot-sources{grid-column:2;grid-row:1;gap:4px}.hot-sources button{padding:8px 12px}.hot-status{grid-column:1/-1;margin:8px 0 4px}.hot-list{grid-column:1/-1}.hot-pagination{grid-column:1;gap:8px;margin-top:4px}.hot-meta{grid-column:2;gap:8px;margin-top:4px;flex-wrap:wrap;justify-content:flex-end}.dashboard-grid .shortcut-link{min-height:72px}
 }
 @media(min-width:1001px) and (max-height:800px){
-  .topbar{height:60px}.topbar>.date-line{flex-direction:row;gap:12px}.has-background .shell{padding-top:8px}main,.has-background main{margin-top:12px}.has-background main{padding:16px;margin-bottom:12px}h1{font-size:30px}.search-section h1{margin-bottom:6px}#search-form{margin-top:12px}.search-section{margin-bottom:12px}.search-section .engines{margin-top:6px}.hot-status{margin-top:4px}.hot-list{min-height:220px}.hot-link{height:44px;min-height:44px;padding-top:1px;padding-bottom:1px}.dashboard-grid .shortcut-link{min-height:64px;padding-top:8px;padding-bottom:8px}.keyboard-tip{margin-top:4px}#search-form{margin-top:8px}.search-box{min-height:58px;padding-top:4px;padding-bottom:4px}.search-submit{width:44px;height:44px}#query{height:44px}.has-background .shell>.quote-widget{margin-bottom:8px;padding-top:8px;padding-bottom:8px}
+  .topbar{height:60px}.topbar>.date-line{flex-direction:row;gap:12px}.shell{row-gap:12px;padding-top:8px;padding-bottom:8px}.has-background .shell{padding-top:8px}.has-background main{padding:16px}h1{font-size:30px}.search-section h1{margin-bottom:6px}#search-form{margin-top:12px}.search-section{margin-bottom:12px}.search-section .engines{margin-top:6px}.hot-status{margin-top:4px}.hot-list{min-height:220px}.hot-link{height:44px;min-height:44px;padding-top:1px;padding-bottom:1px}.dashboard-grid .shortcut-link{min-height:64px;padding-top:8px;padding-bottom:8px}.keyboard-tip{margin-top:4px}#search-form{margin-top:8px}.search-box{min-height:58px;padding-top:4px;padding-bottom:4px}.search-submit{width:44px;height:44px}#query{height:44px}.has-background .shell>.quote-widget{padding-top:8px;padding-bottom:8px}
 }
