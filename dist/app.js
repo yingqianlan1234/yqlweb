@@ -273,7 +273,9 @@ function hoverDragPage(drag, button) {
     drag.pageTimer = null;
   }, 550);
 }
-document.addEventListener('pointermove', event => {
+let dragMoveFrame = 0;
+let pendingDragMove = null;
+function updateShortcutDrag(event) {
   const drag = shortcutDrag;
   if (!drag || drag.id !== event.pointerId) return;
   if (!drag.active) {
@@ -285,7 +287,6 @@ document.addEventListener('pointermove', event => {
     drag.ghost.style.width = rect.width + 'px'; document.body.append(drag.ghost);
     drag.node.classList.add('is-dragging'); document.body.classList.add('dragging-shortcut'); dropzone.hidden = false;
   }
-  event.preventDefault();
   drag.ghost.style.transform = `translate(${event.clientX - drag.offsetX}px,${event.clientY - drag.offsetY}px)`;
   const target = document.elementFromPoint(event.clientX, event.clientY);
   dropzone.classList.toggle('is-over', !!target?.closest('#shortcut-dropzone'));
@@ -304,8 +305,20 @@ document.addEventListener('pointermove', event => {
     const old = before.get(node), rect = node.getBoundingClientRect();
     animateChange(node.firstElementChild, [{ transform: `translate(${old.x - rect.x}px,${old.y - rect.y}px)` }, { transform: 'none' }]);
   });
+}
+document.addEventListener('pointermove', event => {
+  if (!shortcutDrag || shortcutDrag.id !== event.pointerId) return;
+  event.preventDefault(); pendingDragMove = event;
+  if (!dragMoveFrame) dragMoveFrame = requestAnimationFrame(() => {
+    dragMoveFrame = 0; const next = pendingDragMove; pendingDragMove = null;
+    if (next) updateShortcutDrag(next);
+  });
 }, { passive: false });
 function finishShortcutDrag(event, cancelled = false) {
+  if (event && shortcutDrag && event.pointerId !== shortcutDrag.id) return;
+  cancelAnimationFrame(dragMoveFrame); dragMoveFrame = 0;
+  const lastMove = pendingDragMove; pendingDragMove = null;
+  if (!cancelled && lastMove) updateShortcutDrag(lastMove);
   const drag = shortcutDrag;
   if (!drag || (event && event.pointerId !== drag.id)) return;
   shortcutDrag = null;
