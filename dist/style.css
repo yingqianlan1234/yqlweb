@@ -228,3 +228,17 @@ body:not(.has-background) .shortcuts>.shortcut::after{display:none}
 #manage-sites>.manage-summary{gap:12px;color:var(--fg);margin-bottom:12px}#manage-sites>.manage-summary h3{margin:0}#manage-sites>.manage-summary .count-label{margin-left:auto}#manage-sites>.manage-summary svg{width:16px;height:16px;transform:none}#manage-sites[open]>.manage-summary svg{transform:rotate(180deg)}.manager-category{margin-top:8px;max-width:160px;min-height:36px;font-size:13px}.add-fields select{width:100%;max-width:none;background:var(--surface);border:1px solid var(--line);height:46px;font-size:16px}.add-fields [hidden]{display:none}
 
 .settings-nav{display:flex;gap:4px;padding:0 28px 16px;flex-shrink:0}.settings-nav [role=tab]{flex:1;min-width:0;min-height:40px;border-radius:10px;font-size:14px;color:var(--muted);transition:background-color var(--ease),color var(--ease)}.settings-nav [role=tab]:hover{background:var(--hover)}.settings-nav [aria-selected=true]{color:var(--fg);background:var(--soft);font-weight:600}.settings-category-panel[hidden]{display:none}.settings-category-panel>.settings-section:last-child{margin-bottom:24px}.settings-add-site{margin:0 0 20px}.settings-header{padding-bottom:20px}.settings-content{scroll-behavior:auto}.settings-category-panel{min-width:0}@media(max-width:600px){.settings-nav{padding:0 20px 14px;gap:2px}.settings-nav [role=tab]{font-size:13px}}
+
+/* 设置只过渡透明度与小幅位移，不动画布局、模糊或阴影。 */
+#settings-dialog{opacity:0;transform:translateX(10px);transition:opacity 140ms ease-out,transform 160ms cubic-bezier(.2,0,.2,1),display 160ms allow-discrete,overlay 160ms allow-discrete}
+#settings-dialog[open]{opacity:1;transform:none;animation:none}
+#settings-dialog::backdrop{opacity:0;transition:opacity 140ms ease-out,display 160ms allow-discrete,overlay 160ms allow-discrete}
+#settings-dialog[open]::backdrop{opacity:1;animation:none}
+@starting-style{#settings-dialog[open]{opacity:0;transform:translateX(10px)}#settings-dialog[open]::backdrop{opacity:0}}
+.settings-header{padding:20px 24px 16px;align-items:center}.settings-header h2{font-size:24px}.settings-header p{font-size:12px;margin-top:5px;line-height:1.5}
+.settings-nav{margin:0 24px 14px;padding:4px;gap:2px;border-radius:12px;background:var(--bg)}.settings-nav [role=tab]{min-height:36px;font-size:13px;border-radius:8px}.settings-nav [aria-selected=true]{background:var(--surface)}
+.settings-content{padding:0 24px 20px;scrollbar-width:thin}.settings-content .settings-section{margin:10px 0 24px}.settings-section h3{margin-bottom:10px}.setting-row{min-height:64px;padding:10px 0;gap:16px}.setting-row small{line-height:1.5;margin-top:4px}.settings-bottom{padding:12px 24px}.settings-note{font-size:12px;line-height:1.6}
+.settings-category-panel:not([hidden]){animation:settings-content-in 140ms ease-out}.settings-category-panel>.settings-section:first-child{margin-top:6px}.settings-add-site{margin-bottom:14px}
+.transparency-guidance{margin:0 0 14px;padding:10px 12px;background:var(--bg);border-radius:8px;color:var(--muted);font-size:12px;line-height:1.6}.transparency-guidance p{margin:0;min-height:38px}.transparency-guidance small{font-size:11px}
+@keyframes settings-content-in{from{opacity:.72;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media(max-width:600px){.settings-header{padding:16px 20px 12px}.settings-nav{margin:0 20px 12px;padding:3px}.settings-content{padding:0 20px 20px}.settings-bottom{padding:10px 20px max(10px,env(safe-area-inset-bottom))}.setting-row{gap:12px}}

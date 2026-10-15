@@ -51,7 +51,7 @@ function save(key, value) {
 let glassBlur = read('glassBlur', null);
 if (!Number.isFinite(glassBlur) || glassBlur < 0 || glassBlur > 40) glassBlur = null;
 let glassTransparency = read('glassTransparency', null);
-if (!Number.isFinite(glassTransparency) || glassTransparency < 0 || glassTransparency > 50) glassTransparency = null;
+if (!Number.isFinite(glassTransparency) || glassTransparency < 0 || glassTransparency > 100) glassTransparency = null;
 let accentColor = read('accentColor', null);
 if (typeof accentColor !== 'string' || !/^#[\da-f]{6}$/i.test(accentColor)) accentColor = null;
 const smallGlassScreen = matchMedia('(max-width:600px)');
@@ -65,12 +65,12 @@ function colorContrast(a, b) {
 }
 function applyAppearance() {
   const dark = theme === 'dark';
-  const transparency = Math.min(glassTransparency ?? (dark ? 24 : 36), dark ? 42 : 50);
+  const transparency = glassTransparency ?? (dark ? 24 : 36);
   const blur = glassBlur ?? (smallGlassScreen.matches ? 16 : 24);
   const style = document.documentElement.style;
   if (glassBlur === null) style.removeProperty('--glass-blur'); else style.setProperty('--glass-blur', blur + 'px');
   style.setProperty('--glass-opacity', 1 - transparency / 100);
-  const clarity = Math.max(0, (transparency - (dark ? 24 : 36)) / (dark ? 18 : 14));
+  const clarity = Math.min(1, Math.max(0, (transparency - (dark ? 24 : 36)) / (dark ? 18 : 14)));
   const tint = dark ? [28, 27, 25].map(v => Math.round(v * (1 - clarity))) : [248, 247, 244];
   const foreground = (dark ? [244, 240, 233] : [35, 33, 29]).map(v => Math.round(v + ((dark ? 255 : 0) - v) * clarity));
   const muted = (dark ? [237, 231, 221] : [56, 52, 47]).map(v => Math.round(v + ((dark ? 255 : 0) - v) * clarity));
@@ -79,30 +79,33 @@ function applyAppearance() {
   style.setProperty('--glass-tint', tint.join(' ')); style.setProperty('--glass-fg', `rgb(${foreground.join(' ')})`); style.setProperty('--glass-muted', `rgb(${muted.join(' ')})`);
   style.setProperty('--glass-glint-a', glintA); style.setProperty('--glass-glint-b', glintB);
   $('#setting-glass-blur').value = blur; $('#glass-blur-value').value = blur + ' px';
-  $('#setting-glass-transparency').max = dark ? 42 : 50;
+  $('#setting-glass-transparency').max = 100;
   $('#setting-glass-transparency').value = transparency; $('#glass-transparency-value').value = transparency + '%';
+  const readability = transparency <= 40 ? '较清晰（0–40%）：底色遮挡较多，通常更易阅读。' : transparency <= 65 ? '通透（41–65%）：背景细节开始影响小字。' : transparency <= 85 ? '高通透（66–85%）：复杂或明亮壁纸下可能较难阅读。' : '极高通透（86–100%）：文字可能与壁纸混在一起。';
+  if ($('#glass-transparency-hint').textContent !== readability) $('#glass-transparency-hint').textContent = readability;
   $('#setting-accent-color').value = accentColor || (dark ? '#e7a78f' : '#d97757');
   for (const key of ['--accent', '--custom-accent', '--accent-text', '--accent-ink', '--soft']) style.removeProperty(key);
   const chosenAccent = accentColor || (dark ? '#e7a78f' : '#d97757');
   const rgb = chosenAccent.slice(1).match(/../g).map(value => parseInt(value, 16));
   const text = colorContrast(rgb, [0, 0, 0]) > colorContrast(rgb, [255, 255, 255]) ? '#000000' : '#ffffff';
-  const alpha = 1 - transparency / 100;
-  // 以任意壁纸下最不利的玻璃底色计算文字用色；按钮保留用户选择的原色。
-  const glint = 1 - (1 - glintA) * (1 - glintB);
-  const glassBase = dark ? tint.map(v => (v * alpha + 255 * (1 - alpha)) * (1 - glint) + 255 * glint) : tint.map(v => v * alpha);
   const base = dark ? [27, 27, 25] : [245, 245, 243];
   const soft = accentColor ? base.map((v, i) => Math.round(v * .84 + rgb[i] * .16)) : dark ? [59, 43, 37] : [241, 230, 223];
   let ink = rgb;
-  for (let amount = 1; Math.min(...[glassBase, base, soft].map(bg => colorContrast(ink, bg))) < 4.6 && amount <= 100; amount++) ink = rgb.map(v => Math.round(v + ((dark ? 255 : 0) - v) * amount / 100));
+  for (let amount = 1; Math.min(...[base, soft].map(bg => colorContrast(ink, bg))) < 4.6 && amount <= 100; amount++) ink = rgb.map(v => Math.round(v + ((dark ? 255 : 0) - v) * amount / 100));
   style.setProperty('--accent-ink', `rgb(${ink.join(' ')})`);
   if (accentColor) {
     style.setProperty('--accent', accentColor); style.setProperty('--custom-accent', accentColor);
     style.setProperty('--accent-text', text); style.setProperty('--soft', `rgb(${soft.join(' ')})`);
   }
 }
-$('#setting-glass-blur').addEventListener('input', event => { glassBlur = Number(event.target.value); applyAppearance(); save('glassBlur', glassBlur); });
-$('#setting-glass-transparency').addEventListener('input', event => { glassTransparency = Number(event.target.value); applyAppearance(); save('glassTransparency', glassTransparency); });
-$('#setting-accent-color').addEventListener('input', event => { accentColor = event.target.value; applyAppearance(); save('accentColor', accentColor); });
+let appearanceFrame = 0;
+function previewAppearance() { if (!appearanceFrame) appearanceFrame = requestAnimationFrame(() => { appearanceFrame = 0; applyAppearance(); }); }
+$('#setting-glass-blur').addEventListener('input', event => { glassBlur = Number(event.target.value); previewAppearance(); });
+$('#setting-glass-transparency').addEventListener('input', event => { glassTransparency = Number(event.target.value); previewAppearance(); });
+$('#setting-accent-color').addEventListener('input', event => { accentColor = event.target.value; previewAppearance(); });
+$('#setting-glass-blur').addEventListener('change', () => save('glassBlur', glassBlur));
+$('#setting-glass-transparency').addEventListener('change', () => save('glassTransparency', glassTransparency));
+$('#setting-accent-color').addEventListener('change', () => save('accentColor', accentColor));
 $('#appearance-reset').addEventListener('click', () => {
   glassBlur = null; glassTransparency = null; accentColor = null; applyAppearance();
   save('glassBlur', null); save('glassTransparency', null); save('accentColor', null);
@@ -490,7 +493,6 @@ function selectSettingsTab(value, focus = false) {
   document.querySelectorAll('.settings-category-panel').forEach(panel => { panel.hidden = panel.id !== 'settings-category-' + value; });
   $('#settings-subtitle').textContent = { appearance: '主题、色彩与界面动效', wallpaper: '本地壁纸、显示与播放', search: '搜索引擎、联想与历史', sites: '快捷网站、分类与浏览器书签', data: '设置备份与迁移' }[value];
   $('.settings-content').scrollTop = 0;
-  animateChange($('#settings-category-' + value), [{ opacity: .65 }, { opacity: 1 }]);
 }
 document.querySelectorAll('.settings-nav [role=tab]').forEach((tab, index, tabs) => {
   tab.addEventListener('click', () => selectSettingsTab(tab.dataset.settingsTab));
