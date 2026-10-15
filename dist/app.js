@@ -221,3 +221,68 @@ function updateDate() {
   $('#clock').textContent = new Intl.DateTimeFormat('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}).format(now); $('#clock').dateTime = now.toISOString();
 }
 updateDate(); setInterval(updateDate, 30000);
+
+// 图片以 Blob 保存在 IndexedDB，不占用收藏和偏好的 localStorage 空间。
+function backgroundStorage(action, value) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('yql-background', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('images');
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error('背景存储暂时不可用'));
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction('images', action === 'read' ? 'readonly' : 'readwrite');
+      const store = transaction.objectStore('images');
+      const operation = action === 'read' ? store.get('custom') : action === 'write' ? store.put(value, 'custom') : store.delete('custom');
+      transaction.oncomplete = () => { db.close(); resolve(operation.result); };
+      transaction.onerror = transaction.onabort = () => { db.close(); reject(transaction.error); };
+    };
+  });
+}
+let backgroundUrl = null;
+let backgroundBusy = false;
+function applyBackground(value) {
+  if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
+  backgroundUrl = value ? URL.createObjectURL(value.blob) : null;
+  $('#page-background').style.backgroundImage = backgroundUrl ? `url("${backgroundUrl}")` : '';
+  document.body.classList.toggle('has-background', !!value);
+  $('#background-preview').hidden = !value;
+  if (value) { $('#background-thumbnail').src = backgroundUrl; $('#background-name').textContent = value.name; }
+  else { $('#background-thumbnail').removeAttribute('src'); $('#background-name').textContent = ''; }
+  $('#background-reset').disabled = !value;
+}
+function setBackgroundBusy(busy) {
+  backgroundBusy = busy;
+  $('#background-choose').disabled = busy;
+  $('#background-reset').disabled = busy || !backgroundUrl;
+  $('#background-choose').textContent = busy ? '正在处理…' : '选择图片';
+}
+$('#background-choose').addEventListener('click', () => $('#background-file').click());
+$('#background-file').addEventListener('change', async event => {
+  const file = event.target.files[0]; event.target.value = '';
+  if (!file || backgroundBusy) return;
+  if (!['image/jpeg','image/png','image/webp','image/avif','image/gif'].includes(file.type)) { $('#background-message').textContent = '请选择 JPG、PNG、WebP、AVIF 或 GIF 图片。'; return; }
+  if (file.size > 20 * 1024 * 1024) { $('#background-message').textContent = '图片超过 20 MB，请选择较小的图片。'; return; }
+  setBackgroundBusy(true); $('#background-message').textContent = '正在读取并保存背景…';
+  let sourceUrl;
+  try {
+    sourceUrl = URL.createObjectURL(file);
+    const image = new Image(); image.src = sourceUrl; await image.decode();
+    const scale = Math.min(1, 2560 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext('2d'); context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+    if (!blob) throw new Error('图片无法处理');
+    const value = { blob, name: file.name }; await backgroundStorage('write', value); applyBackground(value);
+    $('#background-message').textContent = '背景已保存。图片会居中铺满，GIF 会转为静态背景。'; $('#settings-status').textContent = '背景已保存';
+  } catch { $('#background-message').textContent = '未能保存背景。请换一张有效图片，并确认浏览器允许网站存储。'; }
+  finally { if (sourceUrl) URL.revokeObjectURL(sourceUrl); setBackgroundBusy(false); }
+});
+$('#background-reset').addEventListener('click', async () => {
+  if (backgroundBusy) return; setBackgroundBusy(true);
+  try { await backgroundStorage('delete'); applyBackground(null); $('#background-message').textContent = '已恢复默认背景。'; $('#settings-status').textContent = '已自动保存'; }
+  catch { $('#background-message').textContent = '未能恢复默认背景，请检查浏览器的网站存储权限后重试。'; }
+  finally { setBackgroundBusy(false); }
+});
+setBackgroundBusy(true);
+backgroundStorage('read').then(value => { if (value && value.blob instanceof Blob) applyBackground(value); }).catch(() => { $('#background-message').textContent = '此浏览器暂时无法读取背景存储；其他功能可正常使用。'; }).finally(() => setBackgroundBusy(false));
