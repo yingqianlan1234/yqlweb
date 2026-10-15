@@ -70,3 +70,5 @@ main{max-width:1120px;width:min(100%,1120px);flex:0 0 auto}h1{font-size:40px}.in
 #settings-dialog.liquid-glass{border-radius:20px 0 0 20px}#settings-dialog.liquid-glass .settings-bottom{background:rgb(var(--glass-tint,247 248 250) / .3);border-top:1px solid var(--line)}
 @media(max-width:600px){#clock{font-size:36px}.topbar .calendar-line{flex-direction:row;align-items:center;gap:6px}#settings-dialog.liquid-glass{border-radius:0}}
 @media(prefers-reduced-transparency:reduce){.has-background .liquid-glass{box-shadow:none}}
+/* 大面积模糊直接切换状态，避免视频与折射叠加时逐帧重算滤镜。 */
+.topbar,.quote-widget,.dashboard-grid,.keyboard-tip,.search-section>h1,.search-section>.intro,.engines{transition:background-color var(--ease),border-color var(--ease),box-shadow var(--ease),color var(--ease)}#page-background{transition:none}
