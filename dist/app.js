@@ -244,6 +244,11 @@ let backgroundPreviewUrl = null;
 let backgroundBusy = false;
 let libraryScanBusy = false;
 let currentLibraryPath = '';
+let backgroundVideoActive = false;
+let backgroundWindowFocused = document.hasFocus();
+let backgroundResumeTime = 0;
+let backgroundMediaVersion = 0;
+let backgroundRestorePending = false;
 let backgroundFit = read('backgroundFit', 'contain');
 if (!['contain', 'cover'].includes(backgroundFit)) backgroundFit = 'contain';
 function applyBackgroundFit() {
@@ -254,15 +259,47 @@ applyBackgroundFit();
 $('#setting-background-fit').addEventListener('change', event => {
   backgroundFit = event.target.value; applyBackgroundFit(); save('backgroundFit', backgroundFit);
 });
+let backgroundBrightness = read('backgroundBrightness', 100);
+if (!Number.isFinite(backgroundBrightness) || backgroundBrightness < 25 || backgroundBrightness > 150) backgroundBrightness = 100;
+let backgroundBlur = read('backgroundBlur', 0);
+if (!Number.isFinite(backgroundBlur) || backgroundBlur < 0 || backgroundBlur > 12) backgroundBlur = 0;
+let backgroundSpeed = read('backgroundSpeed', 1);
+if (![0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].includes(backgroundSpeed)) backgroundSpeed = 1;
+let backgroundPlaying = read('backgroundPlaying', true) !== false;
+function applyBackgroundParameters() {
+  document.documentElement.style.setProperty('--background-brightness', backgroundBrightness / 100);
+  document.documentElement.style.setProperty('--background-blur', backgroundBlur + 'px');
+  $('#setting-background-brightness').value = backgroundBrightness;
+  $('#background-brightness-value').value = backgroundBrightness + '%';
+  $('#setting-background-blur').value = backgroundBlur;
+  $('#background-blur-value').value = backgroundBlur + ' px';
+  $('#setting-background-speed').value = backgroundSpeed;
+  $('#setting-background-playing').checked = backgroundPlaying;
+  $('#background-video').defaultPlaybackRate = backgroundSpeed;
+  $('#background-video').playbackRate = backgroundSpeed;
+}
+applyBackgroundParameters();
+$('#setting-background-brightness').addEventListener('input', event => { backgroundBrightness = Number(event.target.value); applyBackgroundParameters(); save('backgroundBrightness', backgroundBrightness); });
+$('#setting-background-blur').addEventListener('input', event => { backgroundBlur = Number(event.target.value); applyBackgroundParameters(); save('backgroundBlur', backgroundBlur); });
+$('#setting-background-speed').addEventListener('change', event => { backgroundSpeed = Number(event.target.value); applyBackgroundParameters(); save('backgroundSpeed', backgroundSpeed); });
+$('#setting-background-playing').addEventListener('change', event => { backgroundPlaying = event.target.checked; save('backgroundPlaying', backgroundPlaying); syncBackgroundPlayback(); });
+$('#background-parameters-reset').addEventListener('click', () => {
+  backgroundFit = 'contain'; backgroundBrightness = 100; backgroundBlur = 0; backgroundSpeed = 1; backgroundPlaying = true;
+  applyBackgroundFit(); applyBackgroundParameters(); syncBackgroundPlayback();
+  save('backgroundFit', backgroundFit); save('backgroundBrightness', backgroundBrightness); save('backgroundBlur', backgroundBlur); save('backgroundSpeed', backgroundSpeed); save('backgroundPlaying', backgroundPlaying);
+});
 function applyBackground(value) {
-  const video = $('#background-video'); video.pause(); video.removeAttribute('src'); video.removeAttribute('poster'); video.load(); video.hidden = true;
+  backgroundMediaVersion++; backgroundRestorePending = false; backgroundResumeTime = 0;
+  const video = $('#background-video'); video.onloadedmetadata = null; video.pause(); video.removeAttribute('src'); video.removeAttribute('poster'); video.load(); video.hidden = true;
   if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
   if (backgroundPreviewUrl) URL.revokeObjectURL(backgroundPreviewUrl);
   backgroundUrl = value ? URL.createObjectURL(value.blob) : null;
   backgroundPreviewUrl = value?.preview instanceof Blob ? URL.createObjectURL(value.preview) : null;
   const isVideo = value?.kind === 'video';
+  backgroundVideoActive = isVideo;
+  $('#background-video-settings').hidden = !isVideo;
   $('#page-background').style.backgroundImage = backgroundUrl && !isVideo ? `url("${backgroundUrl}")` : '';
-  if (isVideo) { video.muted = true; video.src = backgroundUrl; if (backgroundPreviewUrl) video.poster = backgroundPreviewUrl; video.hidden = false; syncBackgroundPlayback(); }
+  if (isVideo) { video.muted = true; video.src = backgroundUrl; if (backgroundPreviewUrl) video.poster = backgroundPreviewUrl; video.hidden = false; applyBackgroundParameters(); syncBackgroundPlayback(); }
   document.body.classList.toggle('has-background', !!value);
   $('#background-preview').hidden = !value;
   if (value) { $('#background-thumbnail').src = backgroundPreviewUrl || backgroundUrl; $('#background-name').textContent = value.name; }
@@ -272,17 +309,59 @@ function applyBackground(value) {
   $('#background-reset').disabled = !value;
 }
 const reducedBackgroundMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function unloadBackgroundVideo() {
+  const video = $('#background-video');
+  backgroundMediaVersion++; backgroundRestorePending = false; video.onloadedmetadata = null;
+  if (video.getAttribute('src')) {
+    if (video.readyState >= 1 && Number.isFinite(video.currentTime)) backgroundResumeTime = video.currentTime;
+    video.pause(); video.removeAttribute('src'); video.load();
+  }
+  if (backgroundUrl) { URL.revokeObjectURL(backgroundUrl); backgroundUrl = null; }
+}
+async function restoreBackgroundVideo() {
+  if (backgroundRestorePending) return;
+  backgroundRestorePending = true;
+  const version = ++backgroundMediaVersion;
+  $('#background-playback-status').textContent = '正在恢复视频壁纸…';
+  try {
+    const value = await backgroundStorage('read');
+    if (version !== backgroundMediaVersion || !backgroundVideoActive || document.hidden || !backgroundWindowFocused) return;
+    if (value?.kind !== 'video' || !(value.blob instanceof Blob)) throw new Error('视频无法读取');
+    const video = $('#background-video');
+    backgroundUrl = URL.createObjectURL(value.blob);
+    video.onloadedmetadata = () => {
+      video.onloadedmetadata = null;
+      if (Number.isFinite(video.duration) && backgroundResumeTime < video.duration) video.currentTime = backgroundResumeTime;
+      applyBackgroundParameters(); syncBackgroundPlayback();
+    };
+    video.src = backgroundUrl; video.load();
+  } catch { $('#background-playback-status').textContent = '未能恢复视频，请重新选择壁纸。'; }
+  finally { if (version === backgroundMediaVersion) backgroundRestorePending = false; }
+}
 function syncBackgroundPlayback() {
-  const video = $('#background-video'); if (video.hidden) return;
-  if (!motionEnabled || reducedBackgroundMotion.matches || document.hidden) video.pause();
-  else video.play().catch(() => { $('#background-message').textContent = '背景已加载，浏览器暂未允许自动播放；可重新点击壁纸播放。'; });
+  const video = $('#background-video'); if (!backgroundVideoActive) return;
+  if (document.hidden || !backgroundWindowFocused) {
+    unloadBackgroundVideo(); $('#background-playback-status').textContent = '页面位于后台，已卸载视频；返回后自动恢复。'; return;
+  }
+  if (!video.getAttribute('src')) { restoreBackgroundVideo(); return; }
+  const reason = !backgroundPlaying ? '已手动暂停，保留当前画面。' : !motionEnabled ? '界面动效已关闭，视频暂停。' : reducedBackgroundMotion.matches ? '系统已开启减少动态效果，视频暂停。' : '';
+  $('#background-playback-status').textContent = reason || '原生视频播放中，静音循环；后台会卸载视频，返回后恢复。';
+  if (reason) video.pause();
+  else {
+    const version = backgroundMediaVersion;
+    video.play().catch(error => { if (version === backgroundMediaVersion && error.name !== 'AbortError') $('#background-playback-status').textContent = '自动播放被浏览器阻止，请关闭再开启“播放视频壁纸”重试。'; });
+  }
 }
 document.addEventListener('visibilitychange', syncBackgroundPlayback);
+window.addEventListener('blur', () => { backgroundWindowFocused = false; syncBackgroundPlayback(); });
+window.addEventListener('focus', () => { backgroundWindowFocused = true; syncBackgroundPlayback(); });
+window.addEventListener('pagehide', () => { if (backgroundVideoActive) unloadBackgroundVideo(); });
+window.addEventListener('pageshow', () => { backgroundWindowFocused = document.hasFocus(); syncBackgroundPlayback(); });
 reducedBackgroundMotion.addEventListener('change', syncBackgroundPlayback);
 function setBackgroundBusy(busy) {
   backgroundBusy = busy;
   $('#background-choose').disabled = busy;
-  $('#background-reset').disabled = busy || !backgroundUrl;
+  $('#background-reset').disabled = busy || !(backgroundUrl || backgroundVideoActive);
   $('#background-choose').textContent = busy ? '正在处理…' : '选择图片';
   $('#library-choose').disabled = busy || libraryScanBusy;
   document.querySelectorAll('.library-item').forEach(button => { button.disabled = busy || button.dataset.available === 'false'; });

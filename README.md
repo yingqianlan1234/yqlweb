@@ -29,3 +29,5 @@ git push https://github.com/yingqianlan1234/yqlweb.git gh-pages:gh-pages
 后续发布前若本地已存在 `gh-pages` 分支，用 `git subtree split --prefix dist` 输出的提交 SHA 执行 `git push https://github.com/yingqianlan1234/yqlweb.git <SHA>:gh-pages` 即可，无需重建该分支。
 
 原 Sites 配置保留于 `.openai/hosting.json`。
+
+壁纸参数：在设置的当前背景区调节完整显示/铺满裁切、亮度、模糊；视频额外支持播放/暂停和 0.25–2 倍速度。参数自动保存，重置参数不删除背景。视频使用原生播放；标签页隐藏或浏览器窗口失焦时卸载视频源并撤销临时地址，返回后从本地存储恢复到离开的位置，实际内存回收由浏览器管理。
