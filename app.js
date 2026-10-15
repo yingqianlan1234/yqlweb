@@ -142,7 +142,7 @@ function setEngine(value) {
   save('engine', value); updateSearchHint(); moveEngineIndicator();
 }
 function setEnginePicker(open, returnFocus = false) {
-  $('.engine-picker').classList.toggle('is-open', open);
+  $('#search-engine-picker').classList.toggle('is-open', open);
   $('#engine-toggle').setAttribute('aria-expanded', String(open));
   $('.engines').inert = !open; $('.engines').setAttribute('aria-hidden', String(!open));
   if (open) { moveEngineIndicator(); $('[name=engine]:checked').focus({ preventScroll: true }); }
@@ -151,8 +151,8 @@ function setEnginePicker(open, returnFocus = false) {
 $('#engine-toggle').addEventListener('click', () => setEnginePicker($('#engine-toggle').getAttribute('aria-expanded') !== 'true'));
 $('#engine-toggle').addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); setEnginePicker(true); $('[name=engine]:checked').focus(); } });
 $('.engines').addEventListener('click', event => { if (event.target.matches('[name=engine]')) requestAnimationFrame(() => setEnginePicker(false, true)); });
-document.addEventListener('pointerdown', event => { if (!event.target.closest('.engine-picker')) setEnginePicker(false); });
-$('.engine-picker').addEventListener('focusout', event => { if (event.relatedTarget && !$('.engine-picker').contains(event.relatedTarget)) setEnginePicker(false); });
+document.addEventListener('pointerdown', event => { if (!$('#search-engine-picker').contains(event.target)) setEnginePicker(false); });
+$('#search-engine-picker').addEventListener('focusout', event => { if (event.relatedTarget && !$('#search-engine-picker').contains(event.relatedTarget)) setEnginePicker(false); });
 document.addEventListener('keydown', event => { if (event.key === 'Escape' && $('#engine-toggle').getAttribute('aria-expanded') === 'true') { event.preventDefault(); setEnginePicker(false, true); } });
 function moveEngineIndicator() {
   const label = $('[name=engine]:checked').parentElement;
@@ -588,6 +588,24 @@ const HOT_SOURCES = {
   weibo: { name: '微博', board: 'https://s.weibo.com/top/summary?cate=realtimehot', host: 'weibo.com', search: 'https://s.weibo.com/weibo?q=' }
 };
 let hotSource = read('hotSource', 'douyin'); if (!Object.hasOwn(HOT_SOURCES, hotSource)) hotSource = 'douyin';
+function setHotSourcePicker(open, returnFocus = false) {
+  $('.source-picker').classList.toggle('is-open', open);
+  $('#hot-source-toggle').setAttribute('aria-expanded', String(open));
+  $('.hot-sources').inert = !open; $('.hot-sources').setAttribute('aria-hidden', String(!open));
+  if (open) { moveHotIndicator(); $('[data-hot-source][aria-pressed=true]').focus({ preventScroll: true }); }
+  if (returnFocus) $('#hot-source-toggle').focus();
+}
+$('#hot-source-toggle').addEventListener('click', () => setHotSourcePicker($('#hot-source-toggle').getAttribute('aria-expanded') !== 'true'));
+$('#hot-source-toggle').addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); setHotSourcePicker(true); } });
+document.addEventListener('pointerdown', event => { if (!$('.source-picker').contains(event.target)) setHotSourcePicker(false); });
+$('.source-picker').addEventListener('focusout', event => { if (event.relatedTarget && !$('.source-picker').contains(event.relatedTarget)) setHotSourcePicker(false); });
+$('.source-picker').addEventListener('keydown', event => {
+  if (event.key === 'Escape') { event.preventDefault(); setHotSourcePicker(false, true); }
+  if (!event.target.matches('[data-hot-source]')) return;
+  const options = [...document.querySelectorAll('[data-hot-source]')]; const index = options.indexOf(event.target);
+  const next = event.key === 'ArrowRight' ? (index + 1) % options.length : event.key === 'ArrowLeft' ? (index + options.length - 1) % options.length : event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : -1;
+  if (next >= 0) { event.preventDefault(); options[next].focus(); }
+});
 function moveHotIndicator() {
   moveSelectionIndicator($('.hot-sources'), $('[data-hot-source][aria-pressed=true]'), $('.hot-indicator'));
 }
@@ -615,6 +633,8 @@ function renderHot() {
 }
 async function loadHot(source, force = false) {
   const version = ++hotVersion; hotSource = source; hotItems = [];
+  $('#hot-source-toggle span').textContent = HOT_SOURCES[source].name;
+  $('#hot-source-toggle').setAttribute('aria-label', '热点来源：' + HOT_SOURCES[source].name + '，点击切换');
   document.querySelectorAll('[data-hot-source]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.hotSource === source)));
   moveHotIndicator();
   $('#hot-open').href = HOT_SOURCES[source].board; $('#hot-list').setAttribute('aria-label', HOT_SOURCES[source].name + '热点排行');
@@ -641,7 +661,7 @@ async function loadHot(source, force = false) {
     $('#hot-status').textContent = hotItems.length ? '暂时无法刷新，显示上次获取的榜单' : '暂时无法获取，点击刷新重试或查看完整榜单'; renderHot();
   } finally { if (version === hotVersion) $('#hot-refresh').disabled = false; }
 }
-document.querySelectorAll('[data-hot-source]').forEach(button => button.addEventListener('click', () => { save('hotSource', button.dataset.hotSource); loadHot(button.dataset.hotSource); }));
+document.querySelectorAll('[data-hot-source]').forEach(button => button.addEventListener('click', () => { save('hotSource', button.dataset.hotSource); loadHot(button.dataset.hotSource); setHotSourcePicker(false, true); }));
 $('#hot-refresh').addEventListener('click', () => loadHot(hotSource, true));
 loadHot(hotSource);
 

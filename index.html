@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg">
-  <link rel="stylesheet" href="./style.css?v=08185ef4581a">
-  <script src="./app.js?v=704518e53a4c" defer></script>
+  <link rel="stylesheet" href="./style.css?v=0d270cdc5516">
+  <script src="./app.js?v=d77dcb672fe3" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -44,7 +44,7 @@
         </div>
           <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button></div>
           </div>
-          <div class="engine-picker glass-module">
+          <div id="search-engine-picker" class="engine-picker glass-module">
           <button id="engine-toggle" class="engine-toggle" type="button" aria-expanded="false" aria-controls="engine-options" title="当前使用百度"><span>搜索引擎</span><svg aria-hidden="true"><use href="#i-down"/></svg></button>
           <fieldset id="engine-options" class="engines" inert aria-hidden="true"><legend class="sr-only">选择搜索引擎</legend><span class="engine-track" aria-hidden="true"><span class="engine-indicator"></span></span>
             <label class="engine"><input type="radio" name="engine" value="baidu" checked><span>百度</span></label>
@@ -65,7 +65,10 @@
       </section>
       <section class="hot-section glass-module" aria-labelledby="hot-heading">
         <div class="section-heading"><div class="hot-title-group"><h2 id="hot-heading">今日热点</h2><span id="hot-updated"></span></div><button id="hot-refresh" class="icon-button refresh-button" type="button" aria-label="刷新当前热榜" title="刷新热榜"><svg aria-hidden="true"><use href="#i-refresh"/></svg></button></div>
-        <div class="hot-sources" role="group" aria-label="热点来源"><span class="engine-track" aria-hidden="true"><span class="engine-indicator hot-indicator"></span></span><button type="button" data-hot-source="douyin" aria-pressed="true">抖音</button><button type="button" data-hot-source="baidu" aria-pressed="false">百度</button><button type="button" data-hot-source="weibo" aria-pressed="false">微博</button></div>
+        <div class="hot-source-slot"><div class="engine-picker source-picker glass-module">
+          <button id="hot-source-toggle" class="engine-toggle" type="button" aria-expanded="false" aria-controls="hot-source-options" aria-label="热点来源：抖音，点击切换"><span>抖音</span><svg aria-hidden="true"><use href="#i-down"/></svg></button>
+          <div id="hot-source-options" class="hot-sources" role="group" aria-label="热点来源" inert aria-hidden="true"><span class="engine-track" aria-hidden="true"><span class="engine-indicator hot-indicator"></span></span><button type="button" data-hot-source="douyin" aria-pressed="true">抖音</button><button type="button" data-hot-source="baidu" aria-pressed="false">百度</button><button type="button" data-hot-source="weibo" aria-pressed="false">微博</button></div>
+        </div></div>
         <p id="hot-status" class="hot-status" role="status">正在获取热点…</p>
         <ol id="hot-list" class="hot-list" aria-label="热点排行，可滚动浏览" role="list" tabindex="0"></ol>
         <div class="hot-meta"><a id="hot-open" href="https://www.douyin.com/hot" target="_blank" rel="noopener noreferrer">完整榜单 <svg aria-hidden="true"><use href="#i-out"/></svg></a></div>
