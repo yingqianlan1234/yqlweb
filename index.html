@@ -8,8 +8,8 @@
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg">
-  <link rel="stylesheet" href="./style.css?v=c74c850e2403">
-  <script src="./app.js?v=6ce6b9dbb38e" defer></script>
+  <link rel="stylesheet" href="./style.css?v=08185ef4581a">
+  <script src="./app.js?v=704518e53a4c" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -44,9 +44,9 @@
         </div>
           <div class="search-box"><svg class="search-icon"><use href="#i-search"/></svg><label class="sr-only" for="query">输入搜索内容或网址</label><input id="query" name="q" placeholder="搜点什么，或输入网址" autocomplete="off" enterkeyhint="search" spellcheck="false" required><kbd class="key-hint">/</kbd><button class="search-submit" type="submit" aria-label="搜索或前往"><svg><use href="#i-arrow"/></svg></button></div>
           </div>
-          <div class="engine-picker">
-          <button id="engine-toggle" class="engine-toggle glass-module" type="button" aria-expanded="false" aria-controls="engine-options" title="当前使用百度"><span>搜索引擎</span><svg aria-hidden="true"><use href="#i-down"/></svg></button>
-          <fieldset id="engine-options" class="engines glass-module" inert aria-hidden="true"><legend class="sr-only">选择搜索引擎</legend><span class="engine-track" aria-hidden="true"><span class="engine-indicator"></span></span>
+          <div class="engine-picker glass-module">
+          <button id="engine-toggle" class="engine-toggle" type="button" aria-expanded="false" aria-controls="engine-options" title="当前使用百度"><span>搜索引擎</span><svg aria-hidden="true"><use href="#i-down"/></svg></button>
+          <fieldset id="engine-options" class="engines" inert aria-hidden="true"><legend class="sr-only">选择搜索引擎</legend><span class="engine-track" aria-hidden="true"><span class="engine-indicator"></span></span>
             <label class="engine"><input type="radio" name="engine" value="baidu" checked><span>百度</span></label>
             <label class="engine"><input type="radio" name="engine" value="bing"><span>必应</span></label>
             <label class="engine"><input type="radio" name="engine" value="google"><span>Google</span></label>

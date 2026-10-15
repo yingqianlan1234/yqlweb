@@ -145,7 +145,7 @@ function setEnginePicker(open, returnFocus = false) {
   $('.engine-picker').classList.toggle('is-open', open);
   $('#engine-toggle').setAttribute('aria-expanded', String(open));
   $('.engines').inert = !open; $('.engines').setAttribute('aria-hidden', String(!open));
-  if (open) moveEngineIndicator();
+  if (open) { moveEngineIndicator(); $('[name=engine]:checked').focus({ preventScroll: true }); }
   if (returnFocus) $('#engine-toggle').focus();
 }
 $('#engine-toggle').addEventListener('click', () => setEnginePicker($('#engine-toggle').getAttribute('aria-expanded') !== 'true'));
