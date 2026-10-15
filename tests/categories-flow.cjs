@@ -60,9 +60,9 @@ const assert=require('node:assert/strict');
  for(const width of [1382,390,320]){await page.setViewportSize({width,height:956});await page.waitForTimeout(300);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.locator('#site-category-toggle').click();await page.waitForTimeout(400);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'artifacts/categories-'+width+'.png',fullPage:true});await page.keyboard.press('Escape');}
  await page.setViewportSize({width:1382,height:956});await page.locator('#edit-toggle').click();
  const managerFirst=page.locator('#site-manager .manager-row').first();const managedName=await managerFirst.locator('strong').textContent();
- await managerFirst.locator('.manager-category').selectOption('工具');
+ await managerFirst.locator('.manager-category').click();await page.locator('#manager-category-menu [data-value="工具"]').click();
  assert.equal(await page.evaluate(name=>JSON.parse(localStorage.getItem('yql.sites')).find(s=>s.name===name).category,managedName),'工具');
- await page.locator('#site-manager .manager-row').first().locator('.manager-category').selectOption('*new*');
+ await page.locator('#site-manager .manager-row').first().locator('.manager-category').click();await page.locator('#manager-category-menu [data-value="*new*"]').click();
  assert.equal(await page.locator('#new-category-name').isVisible(),true);await page.locator('#new-category-name').fill('设计资料');await page.locator('#add-form [type=submit]').click();
  assert.equal(await page.evaluate(name=>JSON.parse(localStorage.getItem('yql.sites')).find(s=>s.name===name).category,managedName),'设计资料');
  assert.equal(await page.locator('#site-category option[value="设计资料"]').count(),1);
