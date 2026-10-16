@@ -14,7 +14,7 @@ const fs = require('node:fs'), path = require('node:path'), os = require('node:o
   page.on('console', message => { if (message.type() === 'error' && /Content Security Policy|Refused to/i.test(message.text())) csp.push(message.text()); });
   await context.route('https://v1.hitokoto.cn/**', route => route.fulfill({ json: { hitokoto: '每一次出发，都有新的可能。', from: '测试' } }));
   await context.route('https://uapis.cn/**', route => route.fulfill({ json: { list: Array.from({ length: 15 }, (_, i) => ({ title: '热点 ' + (i + 1), url: 'https://www.douyin.com/hot' })) } }));
-  await context.route('https://api.bing.com/**', route => { const url = new URL(route.request().url()); lookups.push(url); return route.fulfill({ json: [url.searchParams.get('query'), ['天气预报', '天气地图']] }); });
+  await context.route(/^https:\/\/(?:api\.bing\.com|suggestion\.baidu\.com|suggestqueries\.google\.com|duckduckgo\.com)\//, route => { const url = new URL(route.request().url()); lookups.push(url); return route.fulfill({ json: [url.searchParams.get('query'), ['天气预报', '天气地图']] }); });
   await context.route('https://www.baidu.com/s?*', route => route.fulfill({ contentType: 'text/html', body: '<title>Search destination</title>search' }));
   await page.goto('chrome://newtab', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#query'); assert.equal(page.url(), 'chrome-extension://' + id + '/index.html');

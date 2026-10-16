@@ -1,4 +1,4 @@
-/* 偏好和搜索历史仅保存在本浏览器；开启联想时，输入内容发送给必应。 */
+/* 偏好和搜索历史仅保存在本浏览器；开启联想时，输入内容发送给所选引擎的联想服务，不可用时回退必应。 */
 const ENGINES = Object.freeze({
   baidu: { name: '百度', url: 'https://www.baidu.com/s', key: 'wd' },
   bing: { name: '必应', url: 'https://www.bing.com/search', key: 'q' },
@@ -142,7 +142,7 @@ function setEngine(value) {
   selectedEngine = value;
   document.querySelectorAll('[name=engine]').forEach(input => { input.checked = input.value === value; });
   $('#setting-engine').value = value;
-  save('engine', value); updateSearchHint(); moveEngineIndicator();
+  save('engine', value); updateSearchHint(); moveEngineIndicator(); window.QidianSearch?.engineChanged();
 }
 function setEnginePicker(open, returnFocus = false) {
   $('#search-engine-picker').classList.toggle('is-open', open);

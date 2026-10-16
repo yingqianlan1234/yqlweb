@@ -1,0 +1,32 @@
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs'),os=require('node:os');
+(async()=>{
+ const extension=process.env.TEST_EXTENSION==='1',options={headless:true,executablePath:process.env.BROWSER_PATH};
+ let browser,context;if(extension){const root=path.resolve('browser-extension');context=await chromium.launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(),'qidian-engine-test-')),{...options,ignoreDefaultArgs:['--disable-extensions'],args:['--disable-extensions-except='+root,'--load-extension='+root]});}else{browser=await chromium.launch(options);context=await browser.newContext();}
+ try{
+ const requests=[],weather=[],errors=[];
+ await context.route(/^https:\/\/(?:suggestion\.baidu\.com|suggestqueries\.google\.com|api\.bing\.com|duckduckgo\.com)\//,async route=>{
+  const url=new URL(route.request().url()),engine=url.hostname.includes('baidu')?'baidu':url.hostname.includes('google')?'google':url.hostname.includes('bing')?'bing':'duckduckgo',query=url.searchParams.get('wd')||url.searchParams.get('q')||url.searchParams.get('query'),callback=url.searchParams.get('cb')||url.searchParams.get('callback')||url.searchParams.get('JsonCallback');requests.push({engine,query,callback});
+  if((query==='服务失败'&&engine!=='bing')||query==='全部失败'){await route.abort();return;}
+  if(query==='旧引擎'&&engine==='google')await new Promise(r=>setTimeout(r,450));
+  const values=query==='空建议'?[]:[engine+'：'+query,'<img src=x onerror=alert(1)>'];
+  const data=query==='格式无效'&&engine!=='bing'?{invalid:true}:callback&&engine==='baidu'?{q:query,s:values}:[query,values];
+  try{await route.fulfill(callback?{contentType:'text/javascript; charset=utf-8',body:callback+'('+JSON.stringify(data)+');'}:{json:data});}catch{}
+ });
+ await context.route('https://api.open-meteo.com/**',route=>{const url=new URL(route.request().url());weather.push({latitude:Number(url.searchParams.get('latitude')),longitude:Number(url.searchParams.get('longitude'))});return route.fulfill({json:{current:{temperature_2m:24,apparent_temperature:25,relative_humidity_2m:62,wind_speed_10m:8,weather_code:2},daily:{temperature_2m_max:[26],temperature_2m_min:[20]}}});});
+ await context.route('https://v1.hitokoto.cn/**',r=>r.fulfill({json:{hitokoto:'测试短句',from:'测试'}}));await context.route('https://uapis.cn/**',r=>r.fulfill({json:{list:[]}}));
+ const page=await context.newPage();page.setDefaultTimeout(12000);page.on('pageerror',e=>errors.push(e.message));await page.goto(extension?'chrome://newtab':process.env.SITE_URL||'http://127.0.0.1:4173');await page.waitForSelector('#query');await page.waitForFunction(()=>document.querySelector('#weather-temperature').textContent==='24°');
+ assert.equal(await page.locator('#weather-city-toggle span').textContent(),'上海');assert.deepEqual(weather[0],{latitude:31.23,longitude:121.47});assert.equal(await page.evaluate(()=>localStorage.getItem('yql.weatherLocation')),null);
+ const choose=async engine=>{await page.evaluate(engine=>setEngine(engine),engine);};
+ for(const engine of ['baidu','bing','google','duckduckgo']){await choose(engine);await page.locator('#query').fill('联想'+engine);const expected=!extension&&engine==='duckduckgo'?'bing':engine;await page.waitForFunction(({expected,engine})=>document.querySelector('.assist-choice')?.textContent===expected+'：联想'+engine,{expected,engine});assert((await page.locator('#search-assist-title').innerText()).includes(engine===expected?await page.evaluate(e=>ENGINES[e].name,engine):'必应（回退）'));assert.equal(requests.at(-1).engine,expected);assert.equal(Boolean(requests.at(-1).callback),!extension);assert.equal(await page.locator('#search-assist img').count(),0);}
+ await choose('google');await page.locator('#query').fill('服务失败');await page.waitForFunction(()=>document.querySelector('.assist-choice')?.textContent==='bing：服务失败');assert((await page.locator('#search-assist-title').innerText()).includes('必应（回退）'));
+ await page.locator('#query').fill('格式无效');await page.waitForFunction(()=>document.querySelector('.assist-choice')?.textContent==='bing：格式无效');
+ await page.locator('#query').fill('旧引擎');await page.waitForTimeout(280);await choose('baidu');await page.locator('#query').fill('新引擎');await page.waitForFunction(()=>document.querySelector('.assist-choice')?.textContent==='baidu：新引擎');await page.waitForTimeout(500);assert(!(await page.locator('#search-assist').innerText()).includes('旧引擎'));
+ await page.locator('#query').fill('空建议');await page.waitForFunction(()=>document.querySelector('#search-assist-status').textContent.includes('暂无更多联想'));assert.equal(requests.at(-1).engine,'baidu');
+ await page.locator('#query').fill('全部失败');await page.waitForFunction(()=>document.querySelector('#search-assist-status').textContent.includes('联想暂不可用'));
+ const count=requests.length;await page.locator('#query').fill('https://private.example/path');await page.waitForTimeout(350);assert.equal(requests.length,count);await page.keyboard.press('Escape');
+ await page.evaluate(()=>localStorage.setItem('yql.weatherLocation',JSON.stringify({name:'坏数据',latitude:1000,longitude:0})));await page.reload();await page.waitForFunction(()=>document.querySelector('#weather-city-toggle span').textContent==='上海');
+ await page.locator('#weather-city-toggle').click();await page.locator('#weather-cities button').filter({hasText:'北京'}).click();await page.waitForFunction(()=>document.querySelector('#weather-city-toggle span').textContent==='北京'&&!document.querySelector('#weather-refresh').disabled);assert.equal(weather.at(-1).latitude,39.9);await page.reload();await page.waitForFunction(()=>document.querySelector('#weather-city-toggle span').textContent==='北京');
+ for(const width of [1382,320]){await page.setViewportSize({width,height:956});await page.locator('#query').fill('界面');await page.waitForFunction(()=>document.querySelector('.assist-choice')?.textContent.includes('界面'));assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'artifacts/providers-'+(extension?'extension-':'web-')+width+'.png'});}
+ assert.deepEqual(errors,[]);console.log(JSON.stringify({passed:true,extension,providerSwitch:true,failureFallback:true,staleCancelled:true,emptyAndPrivacy:true,defaultShanghai:true,savedCityPreserved:true,responsive:true,errors}));
+ }finally{await context.close();if(browser)await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

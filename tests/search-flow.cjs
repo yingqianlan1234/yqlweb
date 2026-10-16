@@ -9,8 +9,8 @@ const fs = require('node:fs');
   page.on('pageerror', error => errors.push(error.message));
   await page.route('https://v1.hitokoto.cn/**', route => route.fulfill({ json: { hitokoto: '每一次出发，都有新的可能。', from: '测试' } }));
   await page.route('https://uapis.cn/**', route => route.fulfill({ json: { list: Array.from({ length: 15 }, (_, i) => ({ title: '热点 ' + (i + 1), url: 'https://www.douyin.com/hot' })) } }));
-  await page.route('https://api.bing.com/**', async route => {
-    const url = new URL(route.request().url()), query = url.searchParams.get('query'), callback = url.searchParams.get('JsonCallback'); requested.push(query);
+  await page.route(/^https:\/\/(?:api\.bing\.com|suggestion\.baidu\.com|suggestqueries\.google\.com|duckduckgo\.com)\//, async route => {
+    const url = new URL(route.request().url()), query = (url.searchParams.get('query') || url.searchParams.get('wd') || url.searchParams.get('q')), callback = (url.searchParams.get('JsonCallback') || url.searchParams.get('cb') || url.searchParams.get('callback')); requested.push(query);
     if (query === '断网') { await route.abort(); return; }
     await new Promise(resolve => setTimeout(resolve, query === '旧词' ? 450 : 20));
     const data = JSON.stringify([query, [query + '推荐', query + '介绍', '<img src=x onerror=alert(1)>']]);

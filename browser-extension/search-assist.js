@@ -27,10 +27,10 @@
     query.value = text; updateSearchHint(); close(); query.focus();
     document.querySelector('#search-form').requestSubmit();
   }
-  function render(items, message, online) {
+  function render(items, message, online, source = '') {
     if (document.activeElement !== query || composing) return;
     choices = items; active = -1; list.replaceChildren();
-    title.textContent = online ? '搜索联想 · 必应' : '搜索历史';
+    title.textContent = online ? '搜索联想 · ' + source : '搜索历史';
     clear.hidden = !history.length; status.textContent = message;
     items.forEach((item, index) => {
       const row = document.createElement('div'); row.className = 'assist-row'; row.setAttribute('role', 'presentation');
@@ -49,8 +49,20 @@
     panel.style.setProperty('--assist-height', Math.max(120, Math.min(360, innerHeight - query.closest('.search-box').getBoundingClientRect().bottom - 76)) + 'px');
     panel.hidden = false; query.setAttribute('aria-expanded', 'true'); query.removeAttribute('aria-activedescendant');
   }
-  function jsonp(text, signal) {
-    // 网页使用必应提供的 JSONP；扩展仅 fetch JSON，不运行远程代码。
+  function suggestionUrl(engine, text, callback) {
+    const query = encodeURIComponent(text);
+    if (engine === 'baidu') return 'https://suggestion.baidu.com/su?wd=' + query + '&ie=utf-8&oe=utf-8' + (callback ? '&cb=' + callback : '&action=opensearch');
+    if (engine === 'google') return 'https://suggestqueries.google.com/complete/search?client=firefox&hl=zh-CN&q=' + query + (callback ? '&callback=' + callback : '');
+    if (engine === 'duckduckgo') return 'https://duckduckgo.com/ac/?q=' + query + '&type=list';
+    return 'https://api.bing.com/osjson.aspx?query=' + query + (callback ? '&JsonType=callback&JsonCallback=' + callback : '');
+  }
+  function suggestionEngine() {
+    // DuckDuckGo 未提供可供普通网页跨域使用的 JSONP；扩展可直接读取 JSON。
+    return !extension && selectedEngine === 'duckduckgo' ? 'bing' : selectedEngine;
+  }
+  function sourceLabel(engine, preferred = selectedEngine) { return ENGINES[engine].name + (engine === preferred ? '' : '（回退）'); }
+  function jsonp(engine, text, signal) {
+    // 扩展仅 fetch JSON，不运行远程代码。
     return new Promise((resolve, reject) => {
       const name = '__qidianSuggest_' + crypto.randomUUID().replaceAll('-', '');
       const script = document.createElement('script'); let settled = false;
@@ -61,35 +73,48 @@
       }
       const abort = () => finish(new DOMException('Aborted', 'AbortError'));
       window[name] = data => finish(null, data);
-      script.referrerPolicy = 'no-referrer'; script.src = 'https://api.bing.com/osjson.aspx?query=' + encodeURIComponent(text) + '&JsonType=callback&JsonCallback=' + name;
+      script.referrerPolicy = 'no-referrer'; script.src = suggestionUrl(engine, text, name);
       script.onerror = () => finish(new Error('联想服务暂不可用'));
       script.onload = () => { if (!settled) finish(new Error('联想数据为空')); };
       signal.addEventListener('abort', abort, { once: true }); document.head.append(script);
     });
   }
-  async function lookup(text, current) {
+  async function requestSuggestions(engine, text) {
     const controller = new AbortController(); request = controller;
     const timeout = setTimeout(() => controller.abort(), 4000);
     try {
       let data;
       if (extension) {
-        const response = await fetch('https://api.bing.com/osjson.aspx?query=' + encodeURIComponent(text), { signal: controller.signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+        const response = await fetch(suggestionUrl(engine, text), { signal: controller.signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
         if (!response.ok) throw new Error('联想服务暂不可用'); data = await response.json();
-      } else data = await jsonp(text, controller.signal);
-      if (current !== version || query.value.trim() !== text || !enabled) return;
-      const local = historyMatches(text), seen = new Set(local.map(item => item.text));
-      const suggestions = Array.isArray(data?.[1]) ? data[1].filter(value => typeof value === 'string' && value.trim() && value.length <= 200).filter(value => !seen.has(value) && seen.add(value)).map(value => ({ text: value, history: false })) : [];
-      render([...local, ...suggestions].slice(0, 8), suggestions.length ? '' : '暂无更多联想，可直接搜索', true);
-    } catch {
-      if (current === version) render(historyMatches(text), '联想暂不可用，仍可直接搜索', true);
+      } else data = await jsonp(engine, text, controller.signal);
+      const values = Array.isArray(data) ? data[1] : data?.s;
+      if (!Array.isArray(values)) throw new Error('联想数据格式无效');
+      return values.filter(value => typeof value === 'string' && value.trim() && value.length <= 200);
     } finally { clearTimeout(timeout); if (request === controller) request = null; }
+  }
+  async function lookup(text, current) {
+    const preferred = selectedEngine, primary = suggestionEngine();
+    for (const engine of primary === 'bing' ? ['bing'] : [primary, 'bing']) {
+      if (current !== version || !enabled) return;
+      const source = sourceLabel(engine, preferred);
+      render(historyMatches(text), '正在获取联想…', true, source);
+      try {
+        const values = await requestSuggestions(engine, text);
+        if (current !== version || query.value.trim() !== text || !enabled) return;
+        const local = historyMatches(text), seen = new Set(local.map(item => item.text));
+        const suggestions = values.filter(value => !seen.has(value) && seen.add(value)).map(value => ({ text: value, history: false }));
+        render([...local, ...suggestions].slice(0, 8), suggestions.length ? '' : '暂无更多联想，可直接搜索', true, source); return;
+      } catch { if (current !== version) return; }
+    }
+    if (current === version) render(historyMatches(text), '联想暂不可用，仍可直接搜索', true, sourceLabel('bing', preferred));
   }
   function refresh() {
     cancelLookup(); if (document.activeElement !== query || composing) return;
     const text = query.value.trim();
     if (!text) { if (!historyEnabled) { close(); return; } render(historyMatches(''), history.length ? '' : '暂无搜索记录', false); return; }
     if (!enabled || text.length > 120 || websiteUrl(text) || /^[a-z][a-z\d+.-]*:/i.test(text)) { const items = historyMatches(text); items.length ? render(items, '', false) : close(); return; }
-    render(historyMatches(text), '正在获取联想…', true);
+    render(historyMatches(text), '正在获取联想…', true, sourceLabel(suggestionEngine()));
     const current = version; timer = setTimeout(() => lookup(text, current), 250);
   }
   function clearHistory() { history = []; save('searchHistory', history); if (panel.contains(document.activeElement)) query.focus(); refresh(); notify('搜索历史已清空'); }
@@ -114,7 +139,7 @@
   document.querySelector('#setting-search-history').addEventListener('change', event => { historyEnabled = event.target.checked; save('searchHistoryEnabled', historyEnabled); refresh(); });
   window.addEventListener('storage', event => { if (event.key === 'yql.searchHistory') { history = validHistory(read('searchHistory', [])); refresh(); } });
   window.QidianSearch = {
-    close, isComposing: () => composing || compositionSubmit,
+    close, engineChanged() { close(); refresh(); }, isComposing: () => composing || compositionSubmit,
     record(value) { const text = value.trim(); if (!historyEnabled || !text || text.length > 200) return; history = [{ query: text, at: Date.now() }, ...history.filter(item => item.query.toLocaleLowerCase() !== text.toLocaleLowerCase())].slice(0, 30); save('searchHistory', history); }
   };
 

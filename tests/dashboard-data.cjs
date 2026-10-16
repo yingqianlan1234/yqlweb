@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const source = fs.readFileSync('dist/dashboard.js', 'utf8');
 const context = vm.createContext({ Date, Math, Number });
 vm.runInContext(source.slice(source.indexOf('const DAY_MS'), source.indexOf('function setDisclosure')) +
-  ';this.api = { birthdayInfo, normalizeLocation, normalizeWeather, weatherDescription, claimBirthdayCelebration, clampBirthday, normalizeDayRecord, normalizeDayState, dayRecordInfo, clampRecordDate };', context);
-const { birthdayInfo, normalizeLocation, normalizeWeather, weatherDescription, claimBirthdayCelebration, clampBirthday, normalizeDayRecord, normalizeDayState, dayRecordInfo, clampRecordDate } = context.api;
+  ';this.api = { birthdayInfo, normalizeLocation, normalizeWeather, weatherDescription, claimBirthdayCelebration, normalizeDayRecord, normalizeDayState, dayRecordInfo, clampRecordDate };', context);
+const { birthdayInfo, normalizeLocation, normalizeWeather, weatherDescription, claimBirthdayCelebration, normalizeDayRecord, normalizeDayState, dayRecordInfo, clampRecordDate } = context.api;
 assert.equal(birthdayInfo('2000-10-16', new Date(2026, 9, 16)).today, true);
 assert.equal(birthdayInfo('2026-10-16', new Date(2026, 9, 16)).days, 0);
 assert.equal(birthdayInfo('2024-03-09', new Date(2024, 2, 11)).days, 2);
@@ -29,7 +29,7 @@ assert.equal(claimBirthdayCelebration(storage, '2026-10-17'), true);
 assert.equal(claimBirthdayCelebration({ getItem:() => { throw new Error('blocked'); } }, '2026-10-18'), false);
 console.log('PASS: birthday dates, elapsed days, leap years, invalid/future dates, location bounds, weather data and condition codes');
 
-for (const [parts, expected] of [[[2000,2,31],[2000,2,29]],[[2001,2,29],[2001,2,28]],[[2026,12,31],[2026,10,16]],[[1899,0,0],[1900,1,1]]]) assert.equal(JSON.stringify(clampBirthday(parts,new Date(2026,9,16))),JSON.stringify(expected));
+for (const [parts, expected] of [[[2000,2,31],[2000,2,29]],[[2001,2,29],[2001,2,28]],[[2026,12,31],[2026,10,16]],[[1899,0,0],[1900,1,1]]]) assert.equal(JSON.stringify(clampRecordDate(parts,new Date(2026,9,16))),JSON.stringify(expected));
 console.log('PASS: date wheel leap day, month boundary and future-date clamping');
 const appSource = fs.readFileSync('dist/app.js', 'utf8');
 const edgeSource = appSource.slice(appSource.indexOf('function updateHotScrollEdges()'), appSource.indexOf("$('#hot-list').addEventListener('scroll'"));
