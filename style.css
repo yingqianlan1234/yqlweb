@@ -373,12 +373,18 @@ body:not(.has-background) .shortcuts>.shortcut::after{display:none}
 .side-widgets :is(.hot-section,.weather-section,.life-section){--card-light:rgba(255,255,255,.9);--card-shade:rgba(60,54,44,.13);border-radius:16px;background:var(--bg);box-shadow:6px 6px 16px var(--card-shade),-6px -6px 16px var(--card-light);padding:16px;min-width:0}
 [data-theme=dark] .side-widgets :is(.hot-section,.weather-section,.life-section){--card-light:rgba(255,255,255,.045);--card-shade:rgba(0,0,0,.4)}
 .side-widgets :is(.hot-section,.weather-section,.life-section)::before{display:none}
-.side-widgets .hot-section{grid-area:1/1/3/2;align-self:start;height:64px;padding-top:10px;padding-bottom:10px;z-index:2;transition:height 380ms cubic-bezier(.16,1,.3,1),box-shadow var(--travel)}
-.side-widgets.hot-expanded .hot-section{height:var(--widget-height);padding-bottom:16px}
+/* 卡片表面交叉淡化，避免逐帧重排热榜与重绘伸缩阴影。 */
+.side-widgets .hot-section{grid-area:1/1/3/2;align-self:start;height:var(--widget-height);padding:10px 16px 16px;z-index:2;background:transparent;box-shadow:none;pointer-events:none}
+.side-widgets .hot-section.glass-module::before,.side-widgets .hot-section.glass-module::after{content:"";display:block;position:absolute;inset:0;z-index:-1;border:0;border-radius:16px;background:var(--bg);box-shadow:6px 6px 16px var(--card-shade),-6px -6px 16px var(--card-light);-webkit-backdrop-filter:none;backdrop-filter:none;pointer-events:none;transition:opacity 240ms ease-out}
+.side-widgets .hot-section::before{opacity:0}
+.side-widgets .hot-section::after{height:64px;opacity:1}
+.side-widgets.hot-expanded .hot-section::before{opacity:1}
+.side-widgets.hot-expanded .hot-section::after{opacity:0}
+#hot-toggle{pointer-events:auto}
 .side-widgets .hot-section>.section-heading{height:44px;margin:0}
-.widget-pair{grid-area:2/1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;min-height:0;opacity:1;transform:translateY(0);visibility:visible;transition:opacity 180ms ease-out,transform 380ms cubic-bezier(.16,1,.3,1),visibility 380ms}
-.hot-expanded .widget-pair{opacity:0;transform:translateY(12px);visibility:hidden;pointer-events:none}
-.side-widgets:not(.hot-expanded) .widget-pair{transition-delay:110ms,70ms,0s}
+.widget-pair{grid-area:2/1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;min-height:0;opacity:1;transform:translateY(0);visibility:visible;transition:opacity 180ms ease-out,transform 240ms cubic-bezier(.16,1,.3,1),visibility 240ms}
+.hot-expanded .widget-pair{opacity:0;transform:translateY(8px);visibility:hidden;pointer-events:none}
+.side-widgets:not(.hot-expanded) .widget-pair{transition-delay:40ms,40ms,0s}
 .side-widgets .weather-section,.side-widgets .life-section{display:flex;flex-direction:column;min-height:0}
 .widget-pair .section-heading{flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:12px}
 .widget-pair .section-heading>.text-button{padding:0;max-width:100%;min-height:36px;text-align:left;gap:5px}
@@ -392,9 +398,9 @@ body:not(.has-background) .shortcuts>.shortcut::after{display:none}
 .widget-pair .life-count{margin-top:4px;line-height:1.7;font-size:13px}
 .widget-pair .life-count strong{display:block;margin:5px 0 0;font-size:36px;line-height:1.3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .widget-pair #birthday-caption{margin-top:auto;padding-top:12px}
-#hot-collapse{height:0;transition:grid-template-rows 380ms cubic-bezier(.16,1,.3,1),height 380ms cubic-bezier(.16,1,.3,1),visibility 380ms}
-#hot-collapse.is-open{height:calc(100% - 44px)}
-.hot-body{height:100%;min-height:0}
+#hot-collapse{display:block;height:calc(100% - 44px);opacity:0;transform:translateY(8px);visibility:hidden;pointer-events:none;transition:opacity 180ms ease-out,transform 240ms cubic-bezier(.16,1,.3,1),visibility 240ms}
+#hot-collapse.is-open{opacity:1;transform:translateY(0);visibility:visible;pointer-events:auto}
+#hot-collapse>.hot-body{height:100%;min-height:0;opacity:1;transition:none}
 .hot-body .hot-list{height:auto;min-height:0;flex:1 1 0}
 .hot-body .hot-meta{flex-shrink:0}
 /* 选择器在顶层展开，搜索结果与滚轮不会撑动卡片。 */

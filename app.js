@@ -840,8 +840,10 @@ let hotItems = []; let hotVersion = 0;
 const hotPending = new Map();
 function updateHotScrollEdges() {
   const list = $('#hot-list');
-  list.style.setProperty('--fade-top', list.scrollTop > 2 ? '12px' : '0px');
-  list.style.setProperty('--fade-bottom', list.scrollTop + list.clientHeight < list.scrollHeight - 2 ? '12px' : '0px');
+  const top = list.scrollTop > 2 ? '12px' : '0px';
+  const bottom = list.scrollTop + list.clientHeight < list.scrollHeight - 2 ? '12px' : '0px';
+  if (list.style.getPropertyValue('--fade-top') !== top) list.style.setProperty('--fade-top', top);
+  if (list.style.getPropertyValue('--fade-bottom') !== bottom) list.style.setProperty('--fade-bottom', bottom);
 }
 $('#hot-list').addEventListener('scroll', updateHotScrollEdges, { passive: true });
 new ResizeObserver(updateHotScrollEdges).observe($('#hot-list'));
