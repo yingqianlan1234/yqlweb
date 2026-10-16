@@ -764,15 +764,19 @@ function updateDate() {
   if (quoteDate !== $('#date').dateTime) {
     quoteDate = $('#date').dateTime;
     const festivals = festivalsForDate(now);
+    const birthdayFestival = window.QidianBirthday?.forDate(now);
+    if (birthdayFestival) festivals.push(birthdayFestival);
     $('#festival').hidden = $('#festival-wish').hidden = !festivals.length;
     $('#festival').textContent = festivals.map(([name]) => name).join(' · ');
     $('#festival-wish').textContent = festivals.map(([, wish]) => wish).join(' ');
+    document.dispatchEvent(new Event('qidian-day-change'));
     quoteIndex = (now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) % LOCAL_QUOTES.length;
     if (!$('#quote-text').dataset.online) $('#quote-text').textContent = LOCAL_QUOTES[quoteIndex];
   }
   clearTimeout(dateTimer); dateTimer = setTimeout(updateDate, 60000 - now.getSeconds() * 1000 - now.getMilliseconds() + 20);
 }
 updateDate();
+document.addEventListener('qidian-birthday-change', () => { quoteDate = ''; updateDate(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) updateDate(); });
 async function fetchPublicJson(url) {
   const response = await fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(15000) });
@@ -892,7 +896,7 @@ async function loadHot(source, force = false) {
 }
 document.querySelectorAll('[data-hot-source]').forEach(button => button.addEventListener('click', () => { save('hotSource', button.dataset.hotSource); loadHot(button.dataset.hotSource); setHotSourcePicker(false, true); }));
 $('#hot-refresh').addEventListener('click', () => loadHot(hotSource, true));
-loadHot(hotSource);
+// 热榜在首次展开时加载，切换来源、缓存和刷新逻辑保持不变。
 
 // 背景 Blob 和已授权的目录句柄保存在 IndexedDB，彼此使用独立键。
 function backgroundStorage(action, value, key = 'custom') {
