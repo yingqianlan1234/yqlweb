@@ -41,13 +41,6 @@
       storage.setItem('yql.birthdayCelebrated', day); return true;
     } catch { return false; }
   }
-  function clampBirthday(parts, now = new Date()) {
-    let [year, month, day] = parts;
-    year = Math.max(1900, Math.min(now.getFullYear(), year));
-    month = Math.max(1, Math.min(year === now.getFullYear() ? now.getMonth() + 1 : 12, month));
-    const maximum = year === now.getFullYear() && month === now.getMonth() + 1 ? now.getDate() : new Date(year, month, 0).getDate();
-    return [year, month, Math.max(1, Math.min(maximum, day))];
-  }
   const DAY_KINDS = {birthday:{name:'生日',title:'来到这个世界',mode:'up'},anniversary:{name:'纪念日',title:'我们的纪念日',mode:'up'},deadline:{name:'工作截止日',title:'工作截止日',mode:'down'},custom:{name:'自定义',title:'我的记日',mode:'up'}};
   function dateSerial(value) {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -288,7 +281,7 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderDayRecord(); celebrateBirthday(); } });
   renderDayRecord(); document.dispatchEvent(new Event('qidian-birthday-change')); celebrateBirthday();
 
-  let location = normalizeLocation(read('weatherLocation', null)), weatherVersion = 0, searchVersion = 0, searchTimer, memoryOnly = false;
+  let location = normalizeLocation(read('weatherLocation', null)) || { name:'上海', latitude:31.23, longitude:121.47 }, weatherVersion = 0, searchVersion = 0, searchTimer, memoryOnly = false;
   function showWeather(data, at, cached = false) {
     const weather = normalizeWeather(data), [condition, icon] = weatherDescription(weather.code);
     $('#weather-temperature').textContent = weather.temperature + '°'; $('#weather-condition').textContent = condition; $('#weather-icon').setAttribute('href', '#i-' + icon);
@@ -298,7 +291,6 @@
     $('#weather-status').textContent = `${cached ? '上次更新' : '更新于'} ${new Intl.DateTimeFormat('zh-CN', { hour:'2-digit', minute:'2-digit', hourCycle:'h23' }).format(at)}${memoryOnly ? ' · 城市仅在本次会话有效' : ''}`;
   }
   async function loadWeather(force = false) {
-    if (!location) return;
     const version = ++weatherVersion, selected = location;
     $('#weather-city-toggle span').textContent = selected.name;
     $('#weather-city-toggle').title = selected.name;
@@ -384,5 +376,5 @@
     }, error => { $('#weather-locate').disabled = false; $('#weather-status').textContent = error.code === 1 ? '定位未获允许，请搜索城市。' : '暂时无法定位，请搜索城市或稍后重试。'; }, { enableHighAccuracy:false, timeout:10000, maximumAge:300000 });
   });
   $('#weather-refresh').addEventListener('click', () => loadWeather(true));
-  if (location) loadWeather();
+  loadWeather();
 })();
