@@ -31,3 +31,16 @@ console.log('PASS: birthday dates, elapsed days, leap years, invalid/future date
 
 for (const [parts, expected] of [[[2000,2,31],[2000,2,29]],[[2001,2,29],[2001,2,28]],[[2026,12,31],[2026,10,16]],[[1899,0,0],[1900,1,1]]]) assert.equal(JSON.stringify(clampBirthday(parts,new Date(2026,9,16))),JSON.stringify(expected));
 console.log('PASS: date wheel leap day, month boundary and future-date clamping');
+const appSource = fs.readFileSync('dist/app.js', 'utf8');
+const edgeSource = appSource.slice(appSource.indexOf('function updateHotScrollEdges()'), appSource.indexOf("$('#hot-list').addEventListener('scroll'"));
+const edgeValues = new Map([['--fade-top','0px'],['--fade-bottom','12px']]);
+let edgeWrites = 0;
+const edgeList = {scrollTop:0, clientHeight:170, scrollHeight:660, style:{getPropertyValue:key=>edgeValues.get(key),setProperty:(key,value)=>{edgeWrites++;edgeValues.set(key,value);}}};
+const edgeContext = vm.createContext({$:()=>edgeList});
+vm.runInContext(edgeSource+';this.update = updateHotScrollEdges;',edgeContext);
+edgeContext.update(); assert.equal(edgeWrites,0,'unchanged scroll edges must not invalidate styles');
+edgeList.scrollTop=100; edgeContext.update(); assert.equal(edgeWrites,1);
+edgeContext.update(); assert.equal(edgeWrites,1);
+edgeList.scrollTop=490; edgeContext.update(); assert.equal(edgeWrites,2);
+assert.equal(edgeValues.get('--fade-bottom'),'0px');
+console.log('PASS: scroll-edge updates skip unchanged style writes');
