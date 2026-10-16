@@ -48,6 +48,36 @@
     const maximum = year === now.getFullYear() && month === now.getMonth() + 1 ? now.getDate() : new Date(year, month, 0).getDate();
     return [year, month, Math.max(1, Math.min(maximum, day))];
   }
+  const DAY_KINDS = {birthday:{name:'生日',title:'来到这个世界',mode:'up'},anniversary:{name:'纪念日',title:'我们的纪念日',mode:'up'},deadline:{name:'工作截止日',title:'工作截止日',mode:'down'},custom:{name:'自定义',title:'我的记日',mode:'up'}};
+  function dateSerial(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const [y,m,d] = value.split('-').map(Number), date = new Date(y,m-1,d);
+    return y >= 1900 && y <= 2100 && localDateKey(date) === value ? Date.UTC(y,m-1,d) / DAY_MS : null;
+  }
+  function normalizeDayRecord(value, now = new Date()) {
+    if (!value || !Object.hasOwn(DAY_KINDS,value.kind) || typeof value.id !== 'string' || !value.id || typeof value.title !== 'string' || !value.title.trim() || !['up','down'].includes(value.mode)) return null;
+    const start = dateSerial(value.start), end = value.end === '' || value.end == null ? '' : value.end;
+    if (typeof end !== 'string') return null;
+    if ((start === null && !(value.kind === 'birthday' && value.start === '')) || (end && dateSerial(end) === null) || (value.kind === 'birthday' && value.start > localDateKey(now))) return null;
+    return {id:value.id.slice(0,80),kind:value.kind,title:value.title.trim().slice(0,32),start:value.start,end,mode:value.mode};
+  }
+  function dayRecordInfo(record, now = new Date()) {
+    const start = dateSerial(record?.start), end = dateSerial(record?.end || localDateKey(now));
+    if (start === null || end === null) return null;
+    return {days:(record.mode === 'down' ? start - end : end - start),end:record.end || localDateKey(now)};
+  }
+  function normalizeDayState(value, legacyBirthday, now = new Date()) {
+    if (!value || !Array.isArray(value.items)) return {items:[{id:'birthday',kind:'birthday',title:DAY_KINDS.birthday.title,start:birthdayInfo(legacyBirthday,now) ? legacyBirthday : '',end:'',mode:'up'}],activeId:'birthday'};
+    const seen = new Set(), items = value.items.map(item=>normalizeDayRecord(item,now)).filter(item=>item && !seen.has(item.id) && seen.add(item.id));
+    return {items,activeId:items.some(item=>item.id===value.activeId) ? value.activeId : items[0]?.id || null};
+  }
+  function clampRecordDate(parts, maximum) {
+    let [year,month,day] = parts;
+    year = Math.max(1900,Math.min(maximum.getFullYear(),year));
+    month = Math.max(1,Math.min(year === maximum.getFullYear() ? maximum.getMonth()+1 : 12,month));
+    const last = year === maximum.getFullYear() && month === maximum.getMonth()+1 ? maximum.getDate() : new Date(year,month,0).getDate();
+    return [year,month,Math.max(1,Math.min(last,day))];
+  }
   function setDisclosure(button, panel, open) {
     if (panel.hasAttribute('popover')) {
       if (open) panel.showPopover(); else if (panel.matches(':popover-open')) panel.hidePopover();
@@ -60,33 +90,32 @@
   $('#hot-toggle').addEventListener('click', () => {
     const open = $('#hot-toggle').getAttribute('aria-expanded') !== 'true';
     if (!open && $('#hot-collapse').contains(document.activeElement)) $('#hot-toggle').focus();
-    for (const [button, panel] of [['#weather-city-toggle', '#weather-picker'], ['#birthday-toggle', '#birthday-editor']]) setDisclosure($(button), $(panel), false);
-    $('#widget-pair').inert = open; $('#widget-pair').setAttribute('aria-hidden', String(open));
-    $('.side-widgets').classList.toggle('hot-expanded', open);
-    setDisclosure($('#hot-toggle'), $('#hot-collapse'), open);
+    if ($('#birthday-editor').matches(':popover-open')) $('#birthday-editor').hidePopover();
+    for (const [button,panel] of [['#weather-city-toggle','#weather-picker'],['#birthday-toggle','#day-editor'],['#day-toggle','#day-picker']]) setDisclosure($(button),$(panel),false);
+    $('#widget-pair').inert = open; $('#widget-pair').setAttribute('aria-hidden',String(open));
+    $('.side-widgets').classList.toggle('hot-expanded',open); setDisclosure($('#hot-toggle'),$('#hot-collapse'),open);
     $('#hot-toggle .widget-toggle-hint').textContent = open ? '收起' : '点击展开';
     if (open && !hotLoaded) { hotLoaded = true; loadHot(hotSource); }
     if (!open) setHotSourcePicker(false);
   });
-  for (const [button, panel] of [['#weather-city-toggle', '#weather-picker'], ['#birthday-toggle', '#birthday-editor']]) {
-    $(button).addEventListener('click', () => {
-      const open = $(button).getAttribute('aria-expanded') !== 'true';
-      setDisclosure($(button), $(panel), open);
-      if (open) {
-        if (panel === '#birthday-editor') { initializeWheels(); $('#birthday-year').focus({ preventScroll:true }); }
-        else { showCityPresets(); $('#weather-query').focus({ preventScroll:true }); }
-      }
-    });
+  $('#weather-city-toggle').addEventListener('click', () => {
+    const open = $('#weather-city-toggle').getAttribute('aria-expanded') !== 'true';
+    setDisclosure($('#weather-city-toggle'),$('#weather-picker'),open);
+    if (open) { showCityPresets(); $('#weather-query').focus({preventScroll:true}); }
+  });
+  $('#birthday-toggle').addEventListener('click',()=>openDayEditor(currentDay()));
+  $('#day-toggle').addEventListener('click',()=> {
+    const open = $('#day-toggle').getAttribute('aria-expanded') !== 'true';
+    renderDayOptions(); setDisclosure($('#day-toggle'),$('#day-picker'),open);
+    if (open) { moveDayIndicator(); $('#day-options [aria-pressed=true]')?.focus({preventScroll:true}); }
+  });
+  for (const [button,panel] of [['#weather-city-toggle','#weather-picker'],['#birthday-toggle','#day-editor'],['#day-toggle','#day-picker']]) {
+    $(panel).addEventListener('toggle',event=>$(button).setAttribute('aria-expanded',String(event.newState==='open')));
   }
-
-  for (const [button, panel] of [['#weather-city-toggle', '#weather-picker'], ['#birthday-toggle', '#birthday-editor']]) {
-    $(panel).addEventListener('toggle', event => { $(button).setAttribute('aria-expanded', String(event.newState === 'open')); });
-  }
-  let wheelParts, wheelTimers = [];
+  let wheelParts, wheelTimers = [], wheelLimit = new Date(), wheelTarget;
   const wheelIds = ['#birthday-year', '#birthday-month', '#birthday-day'];
   function wheelMaximum(index) {
-    const now = new Date();
-    return index === 0 ? now.getFullYear() : index === 1 ? (wheelParts[0] === now.getFullYear() ? now.getMonth() + 1 : 12) : clampBirthday([wheelParts[0], wheelParts[1], 31], now)[2];
+    return index === 0 ? wheelLimit.getFullYear() : index === 1 ? (wheelParts[0] === wheelLimit.getFullYear() ? wheelLimit.getMonth() + 1 : 12) : clampRecordDate([wheelParts[0], wheelParts[1], 31], wheelLimit)[2];
   }
   function updateWheelValue() {
     $('#birthday-input').value = wheelParts.map((part, index) => String(part).padStart(index ? 2 : 4, '0')).join('-');
@@ -107,15 +136,15 @@
   }
   function motionAllowed() { return document.documentElement.dataset.motion !== 'off' && !matchMedia('(prefers-reduced-motion: reduce)').matches; }
   function selectWheel(index, value) {
-    const before = [...wheelParts]; wheelParts[index] = value; wheelParts = clampBirthday(wheelParts);
+    const before = [...wheelParts]; wheelParts[index] = value; wheelParts = clampRecordDate(wheelParts,wheelLimit);
     const wheel = $(wheelIds[index]);
     for (const option of wheel.children) option.setAttribute('aria-selected', String(Number(option.textContent) === wheelParts[index]));
     wheel.setAttribute('aria-activedescendant', `date-option-${index}-${wheelParts[index]}`);
     for (let next = index + 1; next < 3; next++) if (before[index] !== wheelParts[index] || before[next] !== wheelParts[next]) renderWheel(next);
     updateWheelValue();
   }
-  function initializeWheels() {
-    wheelParts = clampBirthday((birthday || '2000-01-01').split('-').map(Number));
+  function initializeWheels(value) {
+    wheelParts = clampRecordDate(value.split('-').map(Number),wheelLimit);
     wheelIds.forEach((_, index) => renderWheel(index)); updateWheelValue(); $('#birthday-error').hidden = true;
   }
   wheelIds.forEach((selector, index) => {
@@ -136,19 +165,86 @@
       selectWheel(index, value); wheel.scrollTo({top:(value - first) * 40, behavior:'instant'});
     });
   });
-  let birthday = read('birthday', null);
-  if (!birthdayInfo(birthday)) birthday = null;
+  let dayState = normalizeDayState(read('dayRecords',null),read('birthday',null)), editingDayId = null;
+  function currentDay() { return dayState.items.find(item=>item.id===dayState.activeId) || null; }
   function birthdayFestival(now) {
-    return birthdayInfo(birthday, now)?.today ? ['生日快乐', '生日快乐！愿新的一岁，平安有趣，热爱常在。'] : null;
+    return dayState.items.some(item=>item.kind==='birthday' && birthdayInfo(item.start,now)?.today) ? ['生日快乐','生日快乐！愿新的一岁，平安有趣，热爱常在。'] : null;
   }
-  window.QidianBirthday = { forDate: birthdayFestival };
-  function renderBirthday() {
-    const now = new Date(), info = birthdayInfo(birthday, now);
-    $('#birthday-input').max = localDateKey(now); $('#birthday-input').value = birthday || '';
-    $('#life-days').textContent = info ? info.days.toLocaleString('zh-CN') : '—';
-    $('#birthday-caption').textContent = info ? info.today ? '今天是你的生日，愿新的一岁自在明亮。' : '每一天，都值得好好度过。' : '记录你的生日，让每一天都有迹可循。';
-    $('#birthday-toggle').firstChild.textContent = info ? '修改生日' : '填写生日';
+  window.QidianBirthday = {forDate:birthdayFestival};
+  function persistDays(next,error) {
+    try { localStorage.setItem('yql.dayRecords',JSON.stringify(next)); }
+    catch { error.textContent='浏览器暂时无法保存，请检查本地存储权限后重试。'; error.hidden=false; return false; }
+    dayState=next; error.hidden=true; return true;
   }
+  function renderDayRecord() {
+    const record=currentDay(), info=dayRecordInfo(record), birthdayToday=record?.kind==='birthday' && birthdayInfo(record.start)?.today;
+    $('#day-toggle span').textContent=record ? (record.kind==='birthday' && record.title===DAY_KINDS.birthday.title ? '生日' : record.title) : '选择内容';
+    $('#life-label').textContent=record?.title || '记录重要的日子'; $('#life-label').title=record?.title || ''; $('#day-toggle').title=record?.title || '选择记日内容'; $('#life-days').textContent=info ? info.days.toLocaleString('zh-CN') : '—';
+    $('#day-range').textContent=info ? `${record.mode==='down' ? '倒数' : '正数'} · ${record.end ? '固定区间' : '截至今天'}` : '';
+    $('#birthday-caption').textContent=birthdayToday ? '今天是你的生日，愿新的一岁自在明亮。' : info ? info.days===0 ? '今天，就是这个重要的日子。' : record.mode==='down' ? info.days>0 ? '心有所期，一天更近一天。' : '这段倒数已走过目标日。' : info.days<0 ? '还未到起始日期，期待那一天。' : '每一天，都值得好好度过。' : '添加日期，让重要的日子有迹可循。';
+    $('#birthday-toggle').firstChild.textContent=record ? record.start ? '编辑记录' : '填写生日' : '添加记日';
+  }
+  function moveDayIndicator() {
+    const selected=$('#day-options [aria-pressed=true]'); if (selected) moveSelectionIndicator($('#day-options'),selected,$('#day-options .engine-indicator'));
+  }
+  function renderDayOptions() {
+    $('#day-options').querySelectorAll('button').forEach(button=>button.remove()); $('#day-picker-error').hidden=true;
+    for (const record of dayState.items) {
+      const button=document.createElement('button'); button.type='button'; button.textContent=record.kind==='birthday' && record.title===DAY_KINDS.birthday.title ? DAY_KINDS.birthday.name : record.title;
+      button.setAttribute('aria-pressed',String(record.id===dayState.activeId)); button.dataset.dayId=record.id;
+      button.addEventListener('click',()=> {
+        if (!persistDays({...dayState,activeId:record.id},$('#day-picker-error'))) return;
+        $('#day-options').querySelectorAll('button').forEach(option=>option.setAttribute('aria-pressed',String(option===button)));
+        moveDayIndicator(); renderDayRecord(); animateChange($('#day-display'),[{opacity:.4,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'}]);
+        setDisclosure($('#day-toggle'),$('#day-picker'),false); $('#day-toggle').focus({preventScroll:true});
+      }); $('#day-options').append(button);
+    }
+  }
+  $('#day-options').addEventListener('keydown',event=> {
+    const buttons=Array.from($('#day-options').querySelectorAll('button')), index=buttons.indexOf(event.target);
+    const next=event.key==='ArrowRight' || event.key==='ArrowDown' ? (index+1)%buttons.length : event.key==='ArrowLeft' || event.key==='ArrowUp' ? (index+buttons.length-1)%buttons.length : event.key==='Home' ? 0 : event.key==='End' ? buttons.length-1 : -1;
+    if (next>=0 && buttons[next]) { event.preventDefault(); buttons[next].focus(); }
+  });
+  new ResizeObserver(moveDayIndicator).observe($('#day-options'));
+  function draftDay() { return {id:editingDayId || 'draft',kind:$('[name=day-kind]:checked').value,title:$('#day-title').value,start:$('#day-start').value,end:$('#day-end').value,mode:$('[name=day-mode]:checked').value}; }
+  function updateDayDraft() {
+    const draft=draftDay(), info=dayRecordInfo(draft);
+    $('#day-start-pick').firstChild.textContent=draft.start || '选择日期'; $('#day-end-pick').firstChild.textContent=draft.end || '今天（自动更新）'; $('#day-end-clear').hidden=!draft.end;
+    $('#day-method-note').textContent=draft.mode==='down' ? '倒数 = 起始日期 − 截止日期。倒数到某天时，将起始日期设为目标日。' : '正数 = 截止日期 − 起始日期。适合记录已经过的天数。';
+    $('#day-preview').textContent=info ? `预览：${draft.title.trim() || '这段时光'} ${info.days.toLocaleString('zh-CN')} 天` : '选择起始日期，即可预览记日。';
+  }
+  function openDayEditor(record=null) {
+    if ($('#day-picker').matches(':popover-open')) $('#day-picker').hidePopover();
+    editingDayId=record?.id || null; const draft=record || {kind:'anniversary',title:DAY_KINDS.anniversary.title,mode:'up',start:localDateKey(new Date()),end:''};
+    $(`[name=day-kind][value=${draft.kind}]`).checked=true; $(`[name=day-mode][value=${draft.mode}]`).checked=true;
+    $('#day-title').value=draft.title; $('#day-start').value=draft.start; $('#day-end').value=draft.end;
+    $('#day-editor-title').textContent=record ? '编辑记日' : '添加记日'; $('#day-delete').hidden=!record; $('#day-error').hidden=true;
+    updateDayDraft(); setDisclosure($('#birthday-toggle'),$('#day-editor'),true); $('#day-title').focus({preventScroll:true});
+  }
+  $('#day-add').addEventListener('click',()=>openDayEditor());
+  $('#day-form').addEventListener('input',updateDayDraft);
+  document.querySelectorAll('[name=day-kind]').forEach(input=>input.addEventListener('change',()=> {
+    const preset=DAY_KINDS[input.value]; $('#day-title').value=preset.title; $(`[name=day-mode][value=${preset.mode}]`).checked=true; updateDayDraft();
+  }));
+  $('#day-end-clear').addEventListener('click',()=> { $('#day-end').value=''; updateDayDraft(); });
+  for (const target of ['start','end']) $('#day-'+target+'-pick').addEventListener('click',()=> {
+    wheelTarget=target; const birthStart=target==='start' && draftDay().kind==='birthday'; wheelLimit=birthStart ? new Date() : new Date(2100,11,31);
+    $('#date-wheel-title').textContent=target==='start' ? '起始日期（公历）' : '截止日期（公历）';
+    $('#birthday-editor').showPopover(); initializeWheels($('#day-'+target).value || (birthStart ? '2000-01-01' : localDateKey(new Date()))); $('#birthday-year').focus({preventScroll:true});
+  });
+  $('#day-form').addEventListener('submit',event=> {
+    event.preventDefault(); const draft=draftDay(), record=normalizeDayRecord({...draft,id:editingDayId || crypto.randomUUID()});
+    if (!record || !record.start) { $('#day-error').textContent=draft.kind==='birthday' ? '请选择有效的出生日期，不能晚于今天。' : '请填写名称和有效的起始日期。'; $('#day-error').hidden=false; return; }
+    const items=editingDayId ? dayState.items.map(item=>item.id===editingDayId ? record : item) : [...dayState.items,record];
+    if (!persistDays({items,activeId:record.id},$('#day-error'))) return;
+    setDisclosure($('#birthday-toggle'),$('#day-editor'),false); renderDayRecord(); $('#birthday-toggle').focus({preventScroll:true});
+    document.dispatchEvent(new Event('qidian-birthday-change')); celebrateBirthday();
+  });
+  $('#day-delete').addEventListener('click',()=> {
+    const items=dayState.items.filter(item=>item.id!==editingDayId);
+    if (!persistDays({items,activeId:items[0]?.id || null},$('#day-error'))) return;
+    setDisclosure($('#birthday-toggle'),$('#day-editor'),false); renderDayRecord(); $('#birthday-toggle').focus({preventScroll:true}); document.dispatchEvent(new Event('qidian-birthday-change'));
+  });
   function birthdayConfetti() {
     if (document.documentElement.dataset.motion === 'off' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const canvas = document.createElement('canvas'); canvas.className = 'birthday-confetti'; canvas.setAttribute('aria-hidden', 'true');
@@ -173,29 +269,24 @@
     document.addEventListener('visibilitychange', onVisibility); window.addEventListener('resize', stop, { once: true }); frame = requestAnimationFrame(draw);
   }
   function celebrateBirthday() {
-    if (!birthdayInfo(birthday)?.today || document.hidden) return;
+    if (!birthdayFestival(new Date()) || document.hidden) return;
     const once = () => {
-      if (document.hidden || !birthdayInfo(birthday)?.today) return;
+      if (document.hidden || !birthdayFestival(new Date())) return;
       const key = localDateKey(new Date());
       if (!claimBirthdayCelebration(localStorage, key)) return;
       birthdayConfetti();
     };
     if (navigator.locks) navigator.locks.request('qidian-birthday', once).catch(() => {}); else once();
   }
-  $('#birthday-form').addEventListener('submit', event => {
+  $('#birthday-form').addEventListener('submit',event=> {
     event.preventDefault();
-    wheelIds.forEach((selector,index) => { clearTimeout(wheelTimers[index]); const first = index === 0 ? 1900 : 1; wheelParts[index] = first + Math.round($(selector).scrollTop / 40); });
-    wheelParts = clampBirthday(wheelParts); updateWheelValue();
-    const value = $('#birthday-input').value;
-    if (!birthdayInfo(value)) { $('#birthday-error').textContent = '请选择有效的出生日期，不能晚于今天。'; $('#birthday-error').hidden = false; return; }
-    try { localStorage.setItem('yql.birthday', JSON.stringify(value)); }
-    catch { $('#birthday-error').textContent = '浏览器暂时无法保存生日，请检查本地存储权限。'; $('#birthday-error').hidden = false; return; }
-    birthday = value; $('#birthday-error').hidden = true; setDisclosure($('#birthday-toggle'), $('#birthday-editor'), false); $('#birthday-toggle').focus();
-    renderBirthday(); document.dispatchEvent(new Event('qidian-birthday-change')); celebrateBirthday();
+    wheelIds.forEach((selector,index)=> { clearTimeout(wheelTimers[index]); wheelParts[index]=(index===0 ? 1900 : 1)+Math.round($(selector).scrollTop/40); });
+    wheelParts=clampRecordDate(wheelParts,wheelLimit); updateWheelValue();
+    $('#day-'+wheelTarget).value=$('#birthday-input').value; updateDayDraft(); $('#birthday-editor').hidePopover(); $('#day-'+wheelTarget+'-pick').focus({preventScroll:true});
   });
-  document.addEventListener('qidian-day-change', () => { renderBirthday(); celebrateBirthday(); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderBirthday(); celebrateBirthday(); } });
-  renderBirthday(); document.dispatchEvent(new Event('qidian-birthday-change')); celebrateBirthday();
+  document.addEventListener('qidian-day-change', () => { renderDayRecord(); celebrateBirthday(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderDayRecord(); celebrateBirthday(); } });
+  renderDayRecord(); document.dispatchEvent(new Event('qidian-birthday-change')); celebrateBirthday();
 
   let location = normalizeLocation(read('weatherLocation', null)), weatherVersion = 0, searchVersion = 0, searchTimer, memoryOnly = false;
   function showWeather(data, at, cached = false) {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "栖点 · 新标签页",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "带搜索联想、快捷网站、折叠热点、城市天气、生日记日与本地壁纸的新标签页。",
   "minimum_chrome_version": "120",
   "permissions": [
