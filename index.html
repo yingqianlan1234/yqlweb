@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f5f5f3">
-  <meta name="application-version" content="2.0.2">
+  <meta name="application-version" content="2.1.0">
   <meta name="description" content="一个轻盈的上网起点。自由选择搜索引擎，快速访问常用网站。">
   <title>栖点 · 你的上网起点</title>
   <link rel="icon" href="./icons/qidian.svg?v=b1e15eef43f4">
-  <link rel="stylesheet" href="./style.css?v=6d77e8468db6">
+  <link rel="stylesheet" href="./style.css?v=57dd96aff08a">
   <script src="./app.js?v=6d8fe86ff3d8" defer></script>
   <script src="./search-assist.js?v=b6febdcd0a21" defer></script>
-  <script src="./dashboard.js?v=e279b6d697a4" defer></script>
+  <script src="./dashboard.js?v=73988ca56925" defer></script>
 </head>
 <body>
   <div id="page-background" aria-hidden="true"><video id="background-video" muted loop playsinline preload="metadata" hidden></video></div>
@@ -87,7 +87,7 @@
       </section>
       <div id="widget-pair" class="widget-pair">
       <section class="weather-section glass-module" aria-labelledby="weather-heading">
-        <div class="section-heading"><h2 id="weather-heading">天气</h2><button id="weather-city-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="weather-picker"><span>选择城市</span><svg aria-hidden="true"><use href="#i-down"/></svg></button></div>
+        <div class="section-heading"><div class="widget-title-row"><h2 id="weather-heading">天气</h2><button id="weather-refresh" class="icon-button refresh-button" type="button" aria-label="刷新天气" title="刷新天气" disabled><svg aria-hidden="true"><use href="#i-refresh"/></svg></button></div><button id="weather-city-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="weather-picker"><span>选择城市</span><svg aria-hidden="true"><use href="#i-down"/></svg></button></div>
         <div id="weather-picker" class="widget-popover" popover="auto" aria-label="选择天气城市"><div class="widget-picker-content"><div class="picker-heading"><strong>选择城市</strong><button type="button" class="icon-button" popovertarget="weather-picker" popovertargetaction="hide" aria-label="关闭城市选择"><svg><use href="#i-close"/></svg></button></div>
           <form id="weather-search-form" class="weather-search"><label class="sr-only" for="weather-query">城市名称</label><svg aria-hidden="true"><use href="#i-search"/></svg><input id="weather-query" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="weather-cities" maxlength="80" placeholder="搜索城市或拼音" autocomplete="off" required><button id="weather-search" class="text-button" type="submit">搜索</button></form>
           <p id="weather-search-status" class="widget-note" role="status">常用城市 · 也可以输入名称搜索</p><div id="weather-cities" class="weather-cities" role="listbox" aria-label="匹配的城市"></div>
@@ -96,13 +96,27 @@
         </div></div>
         <p id="weather-status" class="widget-note" role="status">选择城市，或使用当前位置查看天气。</p>
         <div id="weather-result" hidden><div class="weather-current"><svg aria-hidden="true"><use id="weather-icon" href="#i-sun"/></svg><strong id="weather-temperature"></strong><span id="weather-condition"></span></div><p id="weather-details" class="widget-note"></p><p id="weather-range" class="widget-note"></p></div>
-        <div class="widget-footer"><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">天气数据：Open-Meteo</a><button id="weather-refresh" class="icon-button refresh-button" type="button" aria-label="刷新天气" disabled><svg aria-hidden="true"><use href="#i-refresh"/></svg></button></div>
+        <div class="widget-footer"><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">天气数据：Open-Meteo</a></div>
       </section>
       <section class="life-section glass-module" aria-labelledby="life-heading">
-        <div class="section-heading"><h2 id="life-heading">记日</h2><button id="birthday-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="birthday-editor">填写生日<svg aria-hidden="true"><use href="#i-down"/></svg></button></div>
-        <p class="life-count">来到这个世界 <strong id="life-days">—</strong> 天</p>
-        <p id="birthday-caption" class="widget-note">记录你的生日，让每一天都有迹可循。</p>
-        <div id="birthday-editor" class="widget-popover" popover="auto" aria-label="选择出生日期"><div class="widget-picker-content"><div class="picker-heading"><strong>出生日期（公历）</strong><button type="button" class="icon-button" popovertarget="birthday-editor" popovertargetaction="hide" aria-label="关闭生日选择"><svg><use href="#i-close"/></svg></button></div><form id="birthday-form"><input id="birthday-input" type="hidden"><div class="date-wheel-labels" aria-hidden="true"><span>年</span><span>月</span><span>日</span></div><div class="date-wheels" role="group" aria-label="滑动或使用方向键选择出生日期"><div id="birthday-year" class="date-wheel" role="listbox" tabindex="0" aria-label="出生年份"></div><div id="birthday-month" class="date-wheel" role="listbox" tabindex="0" aria-label="出生月份"></div><div id="birthday-day" class="date-wheel" role="listbox" tabindex="0" aria-label="出生日期"></div></div><div class="date-picker-bottom"><output id="birthday-preview" for="birthday-input"></output><button class="text-button" type="submit">保存生日</button></div><p class="widget-note">仅保存在当前浏览器，不会上传。</p><p id="birthday-error" class="error" role="alert" hidden></p></form></div></div>
+        <div class="section-heading"><h2 id="life-heading">记日</h2><button id="day-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="day-picker"><span>生日</span><svg aria-hidden="true"><use href="#i-down"/></svg></button></div>
+        <div id="day-display" aria-live="polite"><p class="life-count"><span id="life-label">来到这个世界</span><strong id="life-days">—</strong><span id="life-unit">天</span></p><p id="day-range" class="widget-note"></p></div>
+        <p id="birthday-caption" class="widget-note">记录重要的日子。</p>
+        <div class="widget-footer"><button id="birthday-toggle" class="text-button" type="button" aria-expanded="false" aria-controls="day-editor">填写生日<svg aria-hidden="true"><use href="#i-edit"/></svg></button></div>
+        <div id="day-picker" class="widget-popover" popover="auto" aria-label="切换记日"><div class="picker-heading"><strong>切换记日</strong><button type="button" class="icon-button" popovertarget="day-picker" popovertargetaction="hide" aria-label="关闭记日切换"><svg><use href="#i-close"/></svg></button></div><div id="day-options" class="day-options" role="group" aria-label="选择记日内容"><span class="engine-track" aria-hidden="true"><span class="engine-indicator"></span></span></div><button id="day-add" class="text-button" type="button"><svg aria-hidden="true"><use href="#i-plus"/></svg>添加记日</button><p id="day-picker-error" class="error" role="alert" hidden></p></div>
+        <div id="day-editor" class="widget-popover" popover="auto" aria-label="编辑记日"><div class="picker-heading"><strong id="day-editor-title">编辑记日</strong><button type="button" class="icon-button" popovertarget="day-editor" popovertargetaction="hide" aria-label="关闭记日编辑"><svg><use href="#i-close"/></svg></button></div>
+          <form id="day-form" class="day-form">
+            <fieldset class="day-kinds"><legend>记日内容</legend><label><input type="radio" name="day-kind" value="birthday" checked><span>生日</span></label><label><input type="radio" name="day-kind" value="anniversary"><span>纪念日</span></label><label><input type="radio" name="day-kind" value="deadline"><span>工作截止日</span></label><label><input type="radio" name="day-kind" value="custom"><span>自定义</span></label></fieldset>
+            <label class="day-field">名称或文案<input id="day-title" type="text" maxlength="32" required autocomplete="off" placeholder="例如：我们的纪念日"></label>
+            <fieldset class="day-modes"><legend>记日方式</legend><label><input type="radio" name="day-mode" value="up" checked><span>正数</span></label><label><input type="radio" name="day-mode" value="down"><span>倒数</span></label></fieldset>
+            <p id="day-method-note" class="widget-note"></p>
+            <div class="day-date-row"><label for="day-start-pick">起始日期</label><input id="day-start" type="hidden"><button id="day-start-pick" class="date-pick-button" type="button">选择日期<svg aria-hidden="true"><use href="#i-down"/></svg></button></div>
+            <div class="day-date-row"><label for="day-end-pick">截止日期</label><input id="day-end" type="hidden"><button id="day-end-pick" class="date-pick-button" type="button">今天（自动更新）<svg aria-hidden="true"><use href="#i-down"/></svg></button><button id="day-end-clear" class="text-button" type="button" hidden>清空</button></div>
+            <p class="widget-note">截止日期留空，始终按今天计算；日期当天从 0 天开始。</p><output id="day-preview" class="day-preview"></output>
+            <div class="date-picker-bottom"><button id="day-delete" class="text-button" type="button" hidden>删除记录</button><button class="text-button" type="submit">保存记日</button></div><p id="day-error" class="error" role="alert" hidden></p><p class="widget-note">仅保存在当前浏览器，不会上传。</p>
+          </form>
+        <div id="birthday-editor" class="widget-popover" popover="auto" aria-label="选择日期"><div class="widget-picker-content"><div class="picker-heading"><strong id="date-wheel-title">选择日期</strong><button type="button" class="icon-button" popovertarget="birthday-editor" popovertargetaction="hide" aria-label="关闭日期选择"><svg><use href="#i-close"/></svg></button></div><form id="birthday-form"><input id="birthday-input" type="hidden"><div class="date-wheel-labels" aria-hidden="true"><span>年</span><span>月</span><span>日</span></div><div class="date-wheels" role="group" aria-label="滑动或使用方向键选择日期"><div id="birthday-year" class="date-wheel" role="listbox" tabindex="0" aria-label="年份"></div><div id="birthday-month" class="date-wheel" role="listbox" tabindex="0" aria-label="月份"></div><div id="birthday-day" class="date-wheel" role="listbox" tabindex="0" aria-label="日期"></div></div><div class="date-picker-bottom"><output id="birthday-preview" for="birthday-input"></output><button class="text-button" type="submit">使用此日期</button></div><p class="widget-note">仅保存在当前浏览器，不会上传。</p><p id="birthday-error" class="error" role="alert" hidden></p></form></div></div>
+        </div>
       </section>
       </div>
       </div>

@@ -446,3 +446,48 @@ body:not(.has-background) .shortcuts>.shortcut::after{display:none}
 .side-widgets :is(.hot-section,.weather-section,.life-section){--fg:#292724;--muted:#68645d;--surface:#fff;--hover:#eceae4}
 [data-theme=dark] .side-widgets :is(.hot-section,.weather-section,.life-section){--fg:#eeeae3;--muted:#b4afa7;--surface:#242422;--hover:#302f2c}
 #weather-result:not([hidden]){animation:city-arrive 320ms cubic-bezier(.16,1,.3,1) both}
+/* 天气刷新与标题同一行，记日沿用引擎选择器的滑动高亮。 */
+.widget-title-row{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px}
+.widget-title-row .icon-button{width:32px;height:32px;flex-shrink:0}
+.widget-title-row .icon-button svg{width:16px;height:16px}
+.widget-pair .section-heading>#day-toggle{justify-content:flex-start;max-width:100%;width:100%;text-align:left}
+#day-toggle span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#day-toggle svg{margin-left:auto}
+.life-count #life-label{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.widget-pair .life-section #birthday-caption{padding-top:8px}
+.widget-pair .life-section .widget-footer{margin-top:4px;padding:0}
+.widget-pair .life-section .widget-footer button{font-size:12px;min-height:40px;padding:4px 0;gap:6px}
+.widget-pair .life-section .widget-footer svg{width:14px;height:14px}
+.day-options{position:relative;isolation:isolate;display:flex;flex-wrap:wrap;gap:8px;padding:4px;max-height:240px;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--muted) transparent;overscroll-behavior:contain}
+.day-options button{flex:0 1 auto;min-width:0;max-width:100%;min-height:44px;padding:10px 14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;border-radius:10px;color:var(--muted);transition:color var(--ease),background var(--ease)}
+.day-options button:hover{background:var(--hover);color:var(--fg)}
+.day-options button[aria-pressed=true]{color:var(--accent-text);font-weight:600}
+.day-options button[aria-pressed=true]:hover{background:transparent}
+.day-options .engine-track{overflow:visible}
+.day-options .engine-indicator{transition:transform var(--travel),width var(--travel),height var(--travel),background-color var(--ease)}
+#day-picker:popover-open .day-options{animation:day-options-enter 240ms cubic-bezier(.22,1,.36,1) both}
+#day-add{margin-top:12px;font-size:13px;color:var(--fg)}
+#day-editor{width:min(400px,calc(100vw - 32px))}
+#day-editor .widget-note{margin:8px 0;font-size:12px}
+.day-form fieldset{position:relative;display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:0 0 16px;border:0;min-width:0}
+.day-form legend{font-size:13px;margin-bottom:8px;color:var(--muted)}
+.day-form fieldset label{position:relative;flex:1;min-width:0;cursor:pointer}
+.day-form fieldset input{position:absolute;width:1px;height:1px;opacity:0;padding:0;border:0}
+.day-form fieldset label span{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:10px;padding:8px 5px;font-size:12px;color:var(--muted);background:var(--bg);box-shadow:inset 2px 2px 5px color-mix(in srgb,var(--fg) 10%,transparent),inset -2px -2px 5px color-mix(in srgb,var(--surface) 70%,transparent);transition:color var(--ease),background-color var(--ease),box-shadow var(--travel)}
+.day-form fieldset input:checked+span{background:var(--hover);color:var(--fg);font-weight:600;box-shadow:none}
+.day-form fieldset input:focus-visible+span{outline:2px solid var(--muted);outline-offset:2px}
+.day-field{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted);margin-bottom:16px}
+.day-form .day-field input{width:100%;font-size:16px;height:44px;padding:10px 12px;border:1px solid var(--muted);border-radius:10px;color:var(--fg);background:var(--bg)}
+.day-date-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px}
+.day-date-row>label{color:var(--muted);flex-shrink:0}
+.date-pick-button{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:44px;min-width:0;flex:1;border-radius:10px;padding:8px 10px;background:var(--hover);color:var(--fg);font-size:13px;font-variant-numeric:tabular-nums}
+.date-pick-button svg{width:14px;height:14px}
+.day-date-row .text-button{font-size:12px;min-height:44px;padding:6px}
+.day-preview{display:block;margin-top:12px;color:var(--fg);font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+.day-form .date-picker-bottom{justify-content:flex-end}
+.day-form #day-delete{margin-right:auto;background:transparent;color:var(--error);padding-left:0}
+@keyframes day-options-enter{from{opacity:.3;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@media(max-width:600px){.widget-title-row .icon-button{width:44px;height:44px}.widget-pair .weather-current{gap:6px}.widget-pair .weather-current strong{font-size:28px}.widget-pair .weather-current>svg{width:20px;height:20px}.widget-pair .weather-current>span{flex-basis:auto;font-size:12px}.widget-pair #weather-details{line-height:1.5}.widget-pair .life-count strong{font-size:24px}.day-form .day-kinds label{flex:1 1 calc(50% - 6px)}.day-form fieldset label span{font-size:13px}}
+
+.day-form .day-field input:focus-visible{outline:2px solid var(--muted);outline-offset:2px;border-color:transparent}
+.widget-pair .section-heading>#day-toggle{padding:6px 10px;border-radius:10px;background:var(--bg);box-shadow:3px 3px 7px var(--card-shade),-3px -3px 7px var(--card-light)}
