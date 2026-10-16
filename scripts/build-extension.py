@@ -8,7 +8,7 @@ import re
 root = Path(__file__).resolve().parents[1]
 source = root / 'dist'
 target = root / 'browser-extension'
-files = ['index.html', 'style.css', 'app.js', 'search-assist.js', 'dashboard.js', 'third-party-notices.txt']
+files = ['index.html', 'style.css', 'app.js', 'search-assist.js', 'cities-cn.js', 'dashboard.js', 'third-party-notices.txt']
 for name in files:
     shutil.copy2(source / name, target / name)
 # 手机滚动修复仅属于网页版，扩展保留自己的固定入口。

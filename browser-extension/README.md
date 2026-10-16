@@ -1,6 +1,6 @@
 # 栖点 · Brave 新标签页扩展
 
-版本 **2.1.3**：热点来源与更新时间同行；分类按钮与网站列表对齐，间距及触摸区域优化。搜索联想随百度、必应、Google、DuckDuckGo 切换，服务不可用时回退必应并显示来源；未选城市时默认上海，已选城市保留。清理旧日期限制函数及失效提示样式，保留多记日、生日祝福与本地数据。
+版本 **2.1.4**：城市联想增加本地中文、拼音与首字母匹配，按城市规模排序、去重，补充地区提示；增加记日随机文案、显示当前搜索引擎名称，品牌句号跟随文字颜色。
 
 1. [下载 qidian-newtab.zip](https://github.com/yingqianlan1234/yqlweb/raw/refs/heads/main/dist/downloads/qidian-newtab.zip)，解压到一个长期保留的文件夹。
 2. 在 Brave 地址栏输入 `brave://extensions`。

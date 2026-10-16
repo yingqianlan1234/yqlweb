@@ -197,6 +197,7 @@ function updateSearchHint() {
   try { direct = !!destination($('#query').value, selectedEngine)?.direct; } catch {}
   $('.search-submit').setAttribute('aria-label', direct ? '前往网站' : '使用' + ENGINES[selectedEngine].name + '搜索');
   $('#engine-toggle').title = '当前使用' + ENGINES[selectedEngine].name;
+  $('#engine-toggle span').textContent = ENGINES[selectedEngine].name;
   $('.search-submit use').setAttribute('href', direct ? '#i-out' : '#i-arrow');
   $('#search-error').hidden = true;
 }

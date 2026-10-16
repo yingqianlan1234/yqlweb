@@ -23,3 +23,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+City names, coordinates and population data adapted from GeoNames cities15000.
+Source: https://download.geonames.org/export/dump/cities15000.zip
+Copyright GeoNames contributors. Licensed under Creative Commons Attribution 4.0.
+https://creativecommons.org/licenses/by/4.0/
+The local index selects Chinese populated places and administrative centres; names are shortened for display.

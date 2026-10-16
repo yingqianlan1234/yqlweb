@@ -3,8 +3,10 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync('dist/dashboard.js', 'utf8');
 const context = vm.createContext({ Date, Math, Number });
+context.window=context;
+vm.runInContext(fs.readFileSync('dist/cities-cn.js','utf8'),context);
 vm.runInContext(source.slice(source.indexOf('const DAY_MS'), source.indexOf('function setDisclosure')) +
-  ';this.api = { birthdayInfo, normalizeLocation, normalizeWeather, weatherDescription, claimBirthdayCelebration, normalizeDayRecord, normalizeDayState, dayRecordInfo, clampRecordDate };', context);
+  ';this.api = { birthdayInfo, normalizeLocation, normalizeWeather, weatherDescription, claimBirthdayCelebration, normalizeDayRecord, normalizeDayState, dayRecordInfo, clampRecordDate, localCityMatches, rankCityResults, dayCopy, DAY_COPY };', context);
 const { birthdayInfo, normalizeLocation, normalizeWeather, weatherDescription, claimBirthdayCelebration, normalizeDayRecord, normalizeDayState, dayRecordInfo, clampRecordDate } = context.api;
 assert.equal(birthdayInfo('2000-10-16', new Date(2026, 9, 16)).today, true);
 assert.equal(birthdayInfo('2026-10-16', new Date(2026, 9, 16)).days, 0);
@@ -64,3 +66,23 @@ assert.equal(normalizeDayState({items:[deadline,deadline],activeId:'absent'},nul
 assert.equal(normalizeDayState({items:[deadline,deadline]},null,today).items.length,1);
 assert.equal(JSON.stringify(clampRecordDate([2028,2,31],new Date(2100,11,31))),JSON.stringify([2028,2,29]));
 console.log('PASS: multiple records, legacy birthday migration, blank/fixed ends, signed counting, leap years and invalid data');
+
+const { localCityMatches, rankCityResults, dayCopy, DAY_COPY } = context.api;
+for (const query of ['上海','上海市','shanghai','SH','上']) assert.equal(localCityMatches(query)[0].title,'上海');
+assert.equal(localCityMatches("xi'an")[0].title,'西安');
+assert.equal(localCityMatches('东京')[0].countryCode,'JP');
+for (const query of ['扬州','yangzhou','yz']) assert.equal(localCityMatches(query)[0].title,'扬州');
+assert.equal(localCityMatches('不存在的城市').length,0);
+const remoteCity = {name:'杭州',admin1:'浙江',country:'中国',country_code:'CN',latitude:30.27,longitude:120.15,feature_code:'PPLA',population:9000000};
+const ranked = rankCityResults('杭州',localCityMatches('杭州'),[remoteCity,{...remoteCity,admin1:'四川',latitude:31,longitude:103,feature_code:'PPL',population:10},{...remoteCity,name:'杭州机场',feature_code:'AIRP'}]);
+assert.equal(ranked.length,1); assert.equal(ranked[0].detail,'浙江 · 中国');
+const shanghai=rankCityResults('上海',[],[{...remoteCity,name:'上海',admin1:'上海市'}])[0];
+assert.equal(shanghai.detail,'中国');
+assert.equal(rankCityResults('Reykjavik',[],[{...remoteCity,name:'Reykjavik',country:'冰岛',country_code:'IS'}])[0].countryCode,'IS');
+assert.equal(rankCityResults('小城',[],[{...remoteCity,feature_code:'PPL',population:0}]).length,1);
+const chooseLast=(_,pool)=>pool[pool.length-1];
+assert.equal(dayCopy({kind:'birthday',title:'来到这个世界',mode:'up'},{days:1},true,chooseLast).label,DAY_COPY.label.at(-1));
+assert.equal(dayCopy({kind:'birthday',title:'我的自定义标题',mode:'up'},{days:1},true,chooseLast).label,'我的自定义标题');
+assert.equal(dayCopy(null,null,false,chooseLast).caption,DAY_COPY.empty.at(-1));
+assert.equal(dayCopy(deadline,{days:2},false,chooseLast).caption,DAY_COPY.waiting.at(-1));
+console.log('PASS: city aliases, major-city ranking, duplicate/POI removal, overseas/small cities and random copy preserving custom titles');
