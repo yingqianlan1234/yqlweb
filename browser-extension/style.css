@@ -158,7 +158,7 @@ body:not(.has-background) .engine-picker::before{background:var(--soft)}
 @media(max-width:600px){.engine-picker{margin-top:14px}.engine-picker :is(.engines,.hot-sources,.category-options){gap:2px}.engine-picker .engine span{padding:10px 8px;font-size:12px}}
 
 /* 热点来源沿用同一块伸展底板，预留宽度保持标题和刷新按钮稳定。 */
-.hot-source-slot{display:flex;justify-content:flex-end;width:180px;max-width:100%;grid-column:2;grid-row:1}
+.hot-source-slot{display:flex;justify-content:flex-end;width:180px;max-width:100%}
 .source-picker.engine-picker{width:88px;margin:0}
 .source-picker.engine-picker.is-open{width:180px}
 .source-picker .hot-sources button{flex:1;min-width:0;padding:8px 12px;white-space:nowrap}
@@ -206,9 +206,9 @@ body.search-focused .search-box{box-shadow:inset 0 0 0 1px var(--line),0 0 0 4px
 .assist-remove{display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border-radius:10px;color:var(--muted)}.assist-remove svg{width:16px;height:16px}.assist-remove:hover,.assist-heading button:hover{background:var(--hover)}
 .assist-status{margin:0;padding:8px 16px 12px;color:var(--muted);font-size:12px;line-height:1.6}.assist-status:empty{display:none}
 
-.site-category-bar{display:flex;align-items:center;gap:8px;margin:8px 0 4px;min-height:28px;font-size:12px;color:var(--muted)}.site-category-bar select{min-height:28px;padding:3px 24px 3px 8px;font-size:12px;max-width:200px;color:var(--fg);background:transparent}.shortcuts-section>#empty-state{top:100px}
+.site-category-bar{display:flex;align-items:center;gap:8px;margin:0 0 14px;min-height:44px;font-size:12px;color:var(--muted)}.shortcuts-section>#empty-state{top:100px}
 
-.category-picker.engine-picker{margin:0;width:110px;height:32px}.category-picker.engine-picker.is-open{width:var(--category-width,280px)}.category-picker .engine-toggle{height:32px;font-size:12px;padding:4px 12px}.category-picker .category-options{display:flex;height:32px;gap:4px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}.category-options button{flex:0 0 auto;min-height:32px;max-width:190px;padding:4px 12px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:999px;color:var(--fg);transition:background-color var(--ease),color var(--ease),box-shadow var(--ease)}.category-options button:hover{background:var(--hover)}.category-options button[aria-pressed=true],.category-options button.category-drop-target{background:var(--accent);color:var(--accent-text)}.category-options button.category-drop-target{box-shadow:inset 0 0 0 2px var(--fg)}.category-options button:focus-visible{outline-offset:-3px}.category-picker .engine-toggle span{overflow:hidden;text-overflow:ellipsis}
+.category-picker.engine-picker{margin:0;width:110px;height:44px}.category-picker.engine-picker.is-open{width:var(--category-width,280px)}.category-picker .engine-toggle{height:44px;font-size:12px;padding:8px 12px}.category-picker .category-options{display:flex;height:44px;gap:4px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}.category-options button{flex:0 0 auto;min-height:44px;max-width:190px;padding:4px 12px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:999px;color:var(--fg);transition:background-color var(--ease),color var(--ease),box-shadow var(--ease)}.category-options button:hover{background:var(--hover)}.category-options button[aria-pressed=true],.category-options button.category-drop-target{background:var(--accent);color:var(--accent-text)}.category-options button.category-drop-target{box-shadow:inset 0 0 0 2px var(--fg)}.category-options button:focus-visible{outline-offset:-3px}.category-picker .engine-toggle span{overflow:hidden;text-overflow:ellipsis}
 
 /* 新拟态只用于默认背景，壁纸玻璃与搜索聚焦晕光保持原样。 */
 body:not(.has-background){--neu-light:rgba(255,255,255,.9);--neu-shade:rgba(60,54,44,.12);--neu-raised:5px 5px 12px var(--neu-shade),-5px -5px 12px var(--neu-light);--neu-pressed:inset 2px 2px 5px var(--neu-shade),inset -2px -2px 5px var(--neu-light)}
@@ -333,10 +333,10 @@ body:not(.has-background) .shortcuts>.shortcut::after{display:none}
 .widget-disclosure>div{min-height:0;overflow:hidden;opacity:0;transition:opacity var(--ease)}
 .widget-disclosure.is-open>div{opacity:1}
 .hot-body{display:flex;flex-direction:column}
-.hot-body>#hot-updated{margin-top:8px;align-self:flex-start}
-.hot-body .hot-source-slot{align-self:flex-end;margin:4px 0 0}
+.hot-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;min-height:44px;margin:8px 0 4px}
+.hot-toolbar #hot-updated{min-width:0;white-space:normal;overflow-wrap:anywhere}
+.hot-toolbar .hot-source-slot{align-self:auto;margin:0 0 0 auto;flex:0 0 180px}
 .hot-body .hot-status{margin:8px 0}
-.hot-body .hot-list{flex-shrink:0}
 .hot-body .hot-meta{margin-top:8px}
 .weather-section,.life-section{min-width:0}
 .side-widgets .section-heading>.text-button{min-width:0;max-width:70%;padding:6px 0 6px 8px;text-align:right;overflow:hidden;text-overflow:ellipsis;font-size:13px}
@@ -486,3 +486,5 @@ body:not(.has-background) .shortcuts>.shortcut::after{display:none}
 
 .day-form .day-field input:focus-visible{outline:2px solid var(--muted);outline-offset:2px;border-color:transparent}
 .widget-pair .section-heading>#day-toggle{padding:6px 10px;border-radius:10px;background:var(--bg);box-shadow:3px 3px 7px var(--card-shade),-3px -3px 7px var(--card-light)}
+
+@media(max-width:600px){.hot-toolbar{gap:8px}.hot-toolbar .hot-source-slot{flex-basis:156px;width:156px}.hot-toolbar .source-picker.engine-picker.is-open{width:156px}.hot-toolbar .hot-sources button{padding:8px 4px;min-height:44px}}
