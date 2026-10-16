@@ -41,7 +41,18 @@
       storage.setItem('yql.birthdayCelebrated', day); return true;
     } catch { return false; }
   }
+  function clampBirthday(parts, now = new Date()) {
+    let [year, month, day] = parts;
+    year = Math.max(1900, Math.min(now.getFullYear(), year));
+    month = Math.max(1, Math.min(year === now.getFullYear() ? now.getMonth() + 1 : 12, month));
+    const maximum = year === now.getFullYear() && month === now.getMonth() + 1 ? now.getDate() : new Date(year, month, 0).getDate();
+    return [year, month, Math.max(1, Math.min(maximum, day))];
+  }
   function setDisclosure(button, panel, open) {
+    if (panel.hasAttribute('popover')) {
+      if (open) panel.showPopover(); else if (panel.matches(':popover-open')) panel.hidePopover();
+      button.setAttribute('aria-expanded', String(open)); return;
+    }
     button.setAttribute('aria-expanded', String(open));
     panel.classList.toggle('is-open', open); panel.inert = !open; panel.setAttribute('aria-hidden', String(!open));
   }
@@ -49,6 +60,9 @@
   $('#hot-toggle').addEventListener('click', () => {
     const open = $('#hot-toggle').getAttribute('aria-expanded') !== 'true';
     if (!open && $('#hot-collapse').contains(document.activeElement)) $('#hot-toggle').focus();
+    for (const [button, panel] of [['#weather-city-toggle', '#weather-picker'], ['#birthday-toggle', '#birthday-editor']]) setDisclosure($(button), $(panel), false);
+    $('#widget-pair').inert = open; $('#widget-pair').setAttribute('aria-hidden', String(open));
+    $('.side-widgets').classList.toggle('hot-expanded', open);
     setDisclosure($('#hot-toggle'), $('#hot-collapse'), open);
     $('#hot-toggle .widget-toggle-hint').textContent = open ? '收起' : '点击展开';
     if (open && !hotLoaded) { hotLoaded = true; loadHot(hotSource); }
@@ -58,10 +72,70 @@
     $(button).addEventListener('click', () => {
       const open = $(button).getAttribute('aria-expanded') !== 'true';
       setDisclosure($(button), $(panel), open);
-      if (open) $(panel).querySelector('input').focus({ preventScroll: true });
+      if (open) {
+        if (panel === '#birthday-editor') { initializeWheels(); $('#birthday-year').focus({ preventScroll:true }); }
+        else { showCityPresets(); $('#weather-query').focus({ preventScroll:true }); }
+      }
     });
   }
 
+  for (const [button, panel] of [['#weather-city-toggle', '#weather-picker'], ['#birthday-toggle', '#birthday-editor']]) {
+    $(panel).addEventListener('toggle', event => { $(button).setAttribute('aria-expanded', String(event.newState === 'open')); });
+  }
+  let wheelParts, wheelTimers = [];
+  const wheelIds = ['#birthday-year', '#birthday-month', '#birthday-day'];
+  function wheelMaximum(index) {
+    const now = new Date();
+    return index === 0 ? now.getFullYear() : index === 1 ? (wheelParts[0] === now.getFullYear() ? now.getMonth() + 1 : 12) : clampBirthday([wheelParts[0], wheelParts[1], 31], now)[2];
+  }
+  function updateWheelValue() {
+    $('#birthday-input').value = wheelParts.map((part, index) => String(part).padStart(index ? 2 : 4, '0')).join('-');
+    $('#birthday-preview').textContent = `${wheelParts[0]}年 ${wheelParts[1]}月 ${wheelParts[2]}日`;
+  }
+  function renderWheel(index) {
+    clearTimeout(wheelTimers[index]);
+    const wheel = $(wheelIds[index]), first = index === 0 ? 1900 : 1, maximum = wheelMaximum(index);
+    wheel.replaceChildren();
+    for (let value = first; value <= maximum; value++) {
+      const option = document.createElement('div'); option.className = 'date-wheel-option'; option.id = `date-option-${index}-${value}`;
+      option.setAttribute('role', 'option'); option.setAttribute('aria-selected', String(value === wheelParts[index])); option.textContent = value;
+      option.addEventListener('click', () => wheel.scrollTo({ top:(value - first) * 40, behavior:motionAllowed() ? 'smooth' : 'instant' }));
+      wheel.append(option);
+    }
+    wheel.setAttribute('aria-activedescendant', `date-option-${index}-${wheelParts[index]}`);
+    wheel.scrollTop = (wheelParts[index] - first) * 40;
+  }
+  function motionAllowed() { return document.documentElement.dataset.motion !== 'off' && !matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  function selectWheel(index, value) {
+    const before = [...wheelParts]; wheelParts[index] = value; wheelParts = clampBirthday(wheelParts);
+    const wheel = $(wheelIds[index]);
+    for (const option of wheel.children) option.setAttribute('aria-selected', String(Number(option.textContent) === wheelParts[index]));
+    wheel.setAttribute('aria-activedescendant', `date-option-${index}-${wheelParts[index]}`);
+    for (let next = index + 1; next < 3; next++) if (before[index] !== wheelParts[index] || before[next] !== wheelParts[next]) renderWheel(next);
+    updateWheelValue();
+  }
+  function initializeWheels() {
+    wheelParts = clampBirthday((birthday || '2000-01-01').split('-').map(Number));
+    wheelIds.forEach((_, index) => renderWheel(index)); updateWheelValue(); $('#birthday-error').hidden = true;
+  }
+  wheelIds.forEach((selector, index) => {
+    const wheel = $(selector), first = index === 0 ? 1900 : 1;
+    wheel.addEventListener('scroll', () => {
+      clearTimeout(wheelTimers[index]);
+      wheelTimers[index] = setTimeout(() => {
+        const value = Math.min(wheelMaximum(index), Math.max(first, first + Math.round(wheel.scrollTop / 40)));
+        selectWheel(index, value);
+        wheel.scrollTo({top:(value - first) * 40, behavior:motionAllowed() ? 'smooth' : 'instant'});
+      }, 100);
+    }, {passive:true});
+    wheel.addEventListener('keydown', event => {
+      if (!['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) return;
+      event.preventDefault();
+      const delta = {ArrowUp:-1, ArrowDown:1, PageUp:-10, PageDown:10}[event.key];
+      const value = event.key === 'Home' ? first : event.key === 'End' ? wheelMaximum(index) : Math.max(first, Math.min(wheelMaximum(index), wheelParts[index] + delta));
+      selectWheel(index, value); wheel.scrollTo({top:(value - first) * 40, behavior:'instant'});
+    });
+  });
   let birthday = read('birthday', null);
   if (!birthdayInfo(birthday)) birthday = null;
   function birthdayFestival(now) {
@@ -109,7 +183,10 @@
     if (navigator.locks) navigator.locks.request('qidian-birthday', once).catch(() => {}); else once();
   }
   $('#birthday-form').addEventListener('submit', event => {
-    event.preventDefault(); const value = $('#birthday-input').value;
+    event.preventDefault();
+    wheelIds.forEach((selector,index) => { clearTimeout(wheelTimers[index]); const first = index === 0 ? 1900 : 1; wheelParts[index] = first + Math.round($(selector).scrollTop / 40); });
+    wheelParts = clampBirthday(wheelParts); updateWheelValue();
+    const value = $('#birthday-input').value;
     if (!birthdayInfo(value)) { $('#birthday-error').textContent = '请选择有效的出生日期，不能晚于今天。'; $('#birthday-error').hidden = false; return; }
     try { localStorage.setItem('yql.birthday', JSON.stringify(value)); }
     catch { $('#birthday-error').textContent = '浏览器暂时无法保存生日，请检查本地存储权限。'; $('#birthday-error').hidden = false; return; }
@@ -120,7 +197,7 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderBirthday(); celebrateBirthday(); } });
   renderBirthday(); document.dispatchEvent(new Event('qidian-birthday-change')); celebrateBirthday();
 
-  let location = normalizeLocation(read('weatherLocation', null)), weatherVersion = 0, searchBusy = false, memoryOnly = false;
+  let location = normalizeLocation(read('weatherLocation', null)), weatherVersion = 0, searchVersion = 0, searchTimer, memoryOnly = false;
   function showWeather(data, at, cached = false) {
     const weather = normalizeWeather(data), [condition, icon] = weatherDescription(weather.code);
     $('#weather-temperature').textContent = weather.temperature + '°'; $('#weather-condition').textContent = condition; $('#weather-icon').setAttribute('href', '#i-' + icon);
@@ -154,24 +231,59 @@
   }
   function selectLocation(value) {
     const selected = normalizeLocation(value); if (!selected) return;
-    location = selected;
+    location = selected; clearTimeout(searchTimer); searchVersion++;
     try { localStorage.setItem('yql.weatherLocation', JSON.stringify(selected)); memoryOnly = false; } catch { memoryOnly = true; }
     setDisclosure($('#weather-city-toggle'), $('#weather-picker'), false); $('#weather-city-toggle').focus(); loadWeather();
   }
-  $('#weather-search-form').addEventListener('submit', async event => {
-    event.preventDefault(); if (searchBusy) return;
-    const query = $('#weather-query').value.trim();
-    if (query.length < 2) { $('#weather-status').textContent = '请输入至少两个字的城市名，也可输入拼音。'; return; }
-    searchBusy = true; $('#weather-search').disabled = true; $('#weather-cities').replaceChildren(); $('#weather-status').textContent = '正在搜索城市…';
+  const presetCities = [
+    ['北京',39.90,116.40],['上海',31.23,121.47],['广州',23.13,113.26],['深圳',22.54,114.06],
+    ['杭州',30.27,120.15],['成都',30.57,104.07],['武汉',30.59,114.31],['重庆',29.56,106.55]
+  ].map(([name,latitude,longitude]) => ({name,latitude,longitude}));
+  let cityOptions = [], cityActive = -1, composing = false;
+  function renderCities(cities, presets = false) {
+    cityOptions = cities; cityActive = -1; $('#weather-query').removeAttribute('aria-activedescendant');
+    $('#weather-cities').replaceChildren(); $('#weather-cities').classList.toggle('city-presets', presets);
+    cities.forEach((city, index) => {
+      const button = document.createElement('button'); button.type = 'button'; button.id = `weather-city-${index}`;
+      button.setAttribute('role','option'); button.setAttribute('aria-selected','false'); button.tabIndex = -1;
+      button.textContent = city.name; button.addEventListener('click', () => selectLocation(city)); $('#weather-cities').append(button);
+    });
+    $('#weather-query').setAttribute('aria-expanded', String(cities.length > 0));
+  }
+  function showCityPresets() {
+    clearTimeout(searchTimer); searchVersion++; $('#weather-query').value = '';
+    renderCities(presetCities, true); $('#weather-search-status').textContent = '常用城市 · 也可以输入名称搜索';
+    $('#weather-cities').setAttribute('aria-busy','false'); $('#weather-search').disabled = false;
+  }
+  async function searchCities() {
+    clearTimeout(searchTimer); const version = ++searchVersion, query = $('#weather-query').value.trim();
+    if (query.length < 2) { renderCities(presetCities, true); $('#weather-search-status').textContent = query ? '再输入一个字，或选择常用城市。' : '常用城市 · 也可以输入名称搜索'; return; }
+    $('#weather-cities').setAttribute('aria-busy','true'); $('#weather-search-status').textContent = '正在查找匹配的城市…';
+    renderCities([]);
     try {
-      const url = new URL('https://geocoding-api.open-meteo.com/v1/search'); url.search = new URLSearchParams({ name:query, count:5, language:'zh', format:'json' });
-      const data = await fetchPublicJson(url.href);
-      const cities = (Array.isArray(data.results) ? data.results : []).map(city => normalizeLocation({ ...city, name:[...new Set([city.name, city.admin1, city.country].filter(value => typeof value === 'string' && value.trim()))].join(' · ') })).filter(Boolean);
-      for (const city of cities) { const button = document.createElement('button'); button.type = 'button'; button.textContent = city.name; button.addEventListener('click', () => selectLocation(city)); $('#weather-cities').append(button); }
-      $('#weather-status').textContent = cities.length ? '请选择对应的城市。' : '没有找到城市，可试试完整名称或拼音。';
-    } catch { $('#weather-status').textContent = '城市搜索暂不可用，请稍后重试或使用定位。'; }
-    finally { searchBusy = false; $('#weather-search').disabled = false; }
+      const url = new URL('https://geocoding-api.open-meteo.com/v1/search'); url.search = new URLSearchParams({name:query, count:6, language:'zh', format:'json'});
+      const data = await fetchPublicJson(url.href); if (version !== searchVersion) return;
+      const cities = (Array.isArray(data.results) ? data.results : []).map(city => normalizeLocation({...city, name:[...new Set([city.name,city.admin1,city.country].filter(value => typeof value === 'string' && value.trim()))].join(' · ')})).filter(Boolean);
+      renderCities(cities); $('#weather-search-status').textContent = cities.length ? '选择城市查看天气 · ↑ ↓ 切换，回车确认' : '没有找到城市，试试完整名称或拼音。';
+    } catch { if (version === searchVersion) $('#weather-search-status').textContent = '城市联想暂不可用，可稍后重试或使用定位。'; }
+    finally { if (version === searchVersion) $('#weather-cities').setAttribute('aria-busy','false'); }
+  }
+  $('#weather-query').addEventListener('compositionstart', () => { composing = true; clearTimeout(searchTimer); searchVersion++; });
+  $('#weather-query').addEventListener('compositionend', () => { composing = false; queueCitySearch(); });
+  function queueCitySearch() {
+    clearTimeout(searchTimer); searchVersion++; renderCities([]); $('#weather-cities').setAttribute('aria-busy','false');
+    if (!composing) searchTimer = setTimeout(searchCities, 280);
+  }
+  $('#weather-query').addEventListener('input', queueCitySearch);
+  $('#weather-query').addEventListener('keydown', event => {
+    if (composing || event.isComposing) return;
+    if (['ArrowDown','ArrowUp'].includes(event.key) && cityOptions.length) {
+      event.preventDefault(); cityActive = (cityActive + (event.key === 'ArrowDown' ? 1 : -1) + cityOptions.length) % cityOptions.length;
+      Array.from($('#weather-cities').children).forEach((option,index) => option.setAttribute('aria-selected', String(index === cityActive)));
+      const option = $('#weather-cities').children[cityActive]; $('#weather-query').setAttribute('aria-activedescendant', option.id); option.scrollIntoView({block:'nearest'});
+    } else if (event.key === 'Enter' && cityActive >= 0) { event.preventDefault(); selectLocation(cityOptions[cityActive]); }
   });
+  $('#weather-search-form').addEventListener('submit', event => { event.preventDefault(); if (!composing) searchCities(); });
   $('#weather-locate').addEventListener('click', () => {
     if (!navigator.geolocation) { $('#weather-status').textContent = '当前浏览器不支持定位，请搜索城市。'; return; }
     $('#weather-locate').disabled = true; $('#weather-status').textContent = '正在定位，请在浏览器提示中授权…';

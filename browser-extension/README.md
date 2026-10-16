@@ -1,6 +1,6 @@
 # 栖点 · Brave 新标签页扩展
 
-版本 **2.0.0**：热点默认折叠，新增城市天气、主动定位、生日记日与当天一次的生日彩炮。生日仅保存在当前浏览器；天气查询使用 Open-Meteo，定位仅在点击“使用当前位置”后调用。更新时浏览器可能提示确认新增的天气域名和定位权限。
+版本 **2.0.1**：热点展开时隐藏天气与记日，三个模块统一新拟态效果；天气、记日并列等高，新增城市联想与常用城市预选、生日日期滚轮，过渡遵循减少动态效果设置。生日仅保存在当前浏览器；天气使用 Open-Meteo，定位仅在主动点击后请求。
 
 1. [下载 qidian-newtab.zip](https://github.com/yingqianlan1234/yqlweb/raw/refs/heads/main/dist/downloads/qidian-newtab.zip)，解压到一个长期保留的文件夹。
 2. 在 Brave 地址栏输入 `brave://extensions`。
