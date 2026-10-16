@@ -71,6 +71,64 @@
     const last = year === maximum.getFullYear() && month === maximum.getMonth()+1 ? maximum.getDate() : new Date(year,month,0).getDate();
     return [year,month,Math.max(1,Math.min(last,day))];
   }
+  const CITY_INDEX = [
+    ['北京','beijing','bj','北京',39.90,116.40],['上海','shanghai','sh','上海',31.23,121.47],['广州','guangzhou','gz','广东',23.13,113.26],['深圳','shenzhen','sz','广东',22.54,114.06],
+    ['杭州','hangzhou','hz','浙江',30.27,120.15],['成都','chengdu','cd','四川',30.57,104.07],['武汉','wuhan','wh','湖北',30.59,114.31],['重庆','chongqing','cq','重庆',29.56,106.55],
+    ['天津','tianjin','tj','天津',39.13,117.20],['南京','nanjing','nj','江苏',32.06,118.80],['苏州','suzhou','sz','江苏',31.30,120.58],['宁波','ningbo','nb','浙江',29.87,121.55],
+    ['西安','xian','xa','陕西',34.26,108.94],['郑州','zhengzhou','zz','河南',34.75,113.62],['长沙','changsha','cs','湖南',28.23,112.94],['厦门','xiamen','xm','福建',24.48,118.09],
+    ['福州','fuzhou','fz','福建',26.07,119.30],['济南','jinan','jn','山东',36.67,117.00],['青岛','qingdao','qd','山东',36.07,120.38],['合肥','hefei','hf','安徽',31.82,117.23],
+    ['南昌','nanchang','nc','江西',28.68,115.86],['昆明','kunming','km','云南',25.04,102.72],['贵阳','guiyang','gy','贵州',26.65,106.63],['南宁','nanning','nn','广西',22.82,108.37],
+    ['海口','haikou','hk','海南',20.04,110.20],['沈阳','shenyang','sy','辽宁',41.80,123.43],['大连','dalian','dl','辽宁',38.91,121.61],['长春','changchun','cc','吉林',43.82,125.32],
+    ['哈尔滨','haerbin','heb','黑龙江',45.80,126.53],['石家庄','shijiazhuang','sjz','河北',38.04,114.51],['太原','taiyuan','ty','山西',37.87,112.55],['兰州','lanzhou','lz','甘肃',36.06,103.83]
+  ].map(([title,pinyin,initials,province,latitude,longitude])=>({title,aliases:[pinyin,initials],province,countryCode:'CN',latitude,longitude,local:true,preferred:true,detail:province===title ? '中国' : province+' · 中国',name:[title,...(province===title ? [] : [province]),'中国'].join(' · ')}));
+  // 常见海外城市的中文译名在地名接口中可能匹配到国内同名村镇。
+  CITY_INDEX.push(...[
+    ['东京',['tokyo','dongjing','dj'],'日本','JP',35.68,139.69],['大阪',['osaka','daban','db'],'日本','JP',34.69,135.50],
+    ['伦敦',['london','lundun','ld'],'英国','GB',51.51,-.13],['巴黎',['paris','bali','bl'],'法国','FR',48.85,2.35],
+    ['纽约',['newyork','niuyue','ny'],'美国','US',40.71,-74.01],['新加坡',['singapore','xinjiapo','xjp'],'新加坡','SG',1.29,103.85],
+    ['香港',['hongkong','xianggang','xg'],'中国','CN',22.28,114.16],['澳门',['macao','macau','aomen','am'],'中国','CN',22.20,113.54],
+    ['台北',['taipei','taibei','tb'],'中国','CN',25.05,121.53]
+  ].map(([title,aliases,detail,countryCode,latitude,longitude])=>({title,aliases,detail,countryCode,latitude,longitude,local:true,preferred:true,name:title+' · '+detail})));
+  for (const [title,aliases,province,latitude,longitude,population] of globalThis.QidianCities || []) {
+    if (CITY_INDEX.some(city=>cityKey(city.title)===cityKey(title) && Math.abs(city.latitude-latitude)<.2 && Math.abs(city.longitude-longitude)<.2)) continue;
+    const detail=province===title ? '中国' : province+' · 中国';
+    CITY_INDEX.push({title,aliases:aliases.map(cityKey),province,detail,latitude,longitude,population,countryCode:'CN',local:true,name:title+' · '+detail});
+  }
+  function cityKey(value) { return String(value || '').normalize('NFKC').toLowerCase().replace(/[\s'’\-]/g,'').replace(/[市省]$/,''); }
+  function localCityMatches(query) {
+    const key=cityKey(query); if (!key || key.includes(',')) return [];
+    return CITY_INDEX.filter(city=>[cityKey(city.title),...city.aliases].some(name=>name.startsWith(key))).sort((a,b)=>cityMatchScore(b,query)-cityMatchScore(a,query)).slice(0,6);
+  }
+  function cityMatchScore(city,query) {
+    const key=cityKey(query.split(',')[0]), names=[cityKey(city.title),...(city.aliases || [])];
+    return (names.includes(key) ? 1000 : names.some(name=>name.startsWith(key)) ? 500 : 0)+(city.local ? 100 : 0)+(city.preferred ? 30 : 0)+(!query.includes(',') && /[\u4e00-\u9fff]/.test(query) && city.countryCode==='CN' ? 20 : 0)+(/^PPLA|^PPLC/.test(city.feature || '') ? 10 : 0)+Math.log10(1+(city.population || 0));
+  }
+  function rankCityResults(query,locals,results) {
+    const remote=(Array.isArray(results) ? results : []).filter(city=>/^PPL(?:A\d?|C)?$/.test(city.feature_code || '')).map(city=> {
+      const title=typeof city.name==='string' ? city.name.trim() : '', parts=[city.admin1,city.country].filter(part=>typeof part==='string' && part.trim() && cityKey(part)!==cityKey(title));
+      const detail=[...new Set(parts)].join(' · '), location=normalizeLocation({...city,name:[title,detail].filter(Boolean).join(' · ')});
+      return title && location ? {...location,title,detail,countryCode:city.country_code,feature:city.feature_code,population:Number.isFinite(city.population) ? city.population : 0} : null;
+    }).filter(Boolean);
+    let cities=[...locals,...remote];
+    if (cities.some(city=>city.local || /^PPLA|^PPLC/.test(city.feature || '') || city.population>=10000)) cities=cities.filter(city=>city.local || /^PPLA|^PPLC/.test(city.feature || '') || city.population>=10000);
+    const unique=[];
+    for (const city of cities.sort((a,b)=>cityMatchScore(b,query)-cityMatchScore(a,query))) if (!unique.some(other=>cityKey(other.title)===cityKey(city.title) && other.countryCode===city.countryCode && Math.abs(other.latitude-city.latitude)<.2 && Math.abs(other.longitude-city.longitude)<.2)) unique.push(city);
+    return unique.slice(0,6);
+  }
+  const DAY_COPY = {
+    label:['来到这个世界','与世界相遇已有','这段人生已走过','在这个星球生活了','与时光同行已有','从初见世界至今'],
+    birthday:['今天是你的生日，愿新的一岁自在明亮。','生日快乐，愿你一路有爱，一路有光。','新的一岁，愿平凡的日子也闪闪发亮。','愿这一岁，热爱有回响，生活有惊喜。','又长大一岁，愿你从容，也始终好奇。','今天属于你，愿快乐比愿望更早到来。','愿新的一岁，心中有盼，身边有暖。','愿你岁岁平安，也岁岁尽兴。'],
+    ordinary:['每一天，都值得好好度过。','把日子过成自己喜欢的样子。','慢慢走，也会抵达喜欢的远方。','生活的美好，藏在寻常的一天。','一路走来，每一步都算数。'],
+    waiting:['心有所期，一天更近一天。','期待的日子，正在慢慢靠近。','给期待一点时间，也给自己一点从容。'],
+    passed:['这段倒数已走过目标日。','重要的日子已经抵达，故事还在继续。','日子向前，留下的回忆也在发光。'],
+    zero:['今天，就是这个重要的日子。','这一刻，值得为自己好好记录。','日历上的这一天，有特别的意义。'],
+    future:['还未到起始日期，期待那一天。','故事还未开始，期待已经在路上。'],
+    empty:['添加日期，让重要的日子有迹可循。','把重要的日子，轻轻记在这里。']
+  };
+  function dayCopy(record,info,isBirthday,choose) {
+    const type=isBirthday ? 'birthday' : !info ? 'empty' : info.days===0 ? 'zero' : record.mode==='down' ? info.days>0 ? 'waiting' : 'passed' : info.days<0 ? 'future' : 'ordinary';
+    return {label:record?.kind==='birthday' && record.title===DAY_KINDS.birthday.title ? choose('label',DAY_COPY.label) : record?.title || '记录重要的日子',caption:choose(type,DAY_COPY[type])};
+  }
   function setDisclosure(button, panel, open) {
     if (panel.hasAttribute('popover')) {
       if (open) panel.showPopover(); else if (panel.matches(':popover-open')) panel.hidePopover();
@@ -169,12 +227,14 @@
     catch { error.textContent='浏览器暂时无法保存，请检查本地存储权限后重试。'; error.hidden=false; return false; }
     dayState=next; error.hidden=true; return true;
   }
+  const copyChoices=new Map();
+  function chooseDayCopy(key,pool) { if (!copyChoices.has(key)) copyChoices.set(key,pool[Math.floor(Math.random()*pool.length)]); return copyChoices.get(key); }
   function renderDayRecord() {
     const record=currentDay(), info=dayRecordInfo(record), birthdayToday=record?.kind==='birthday' && birthdayInfo(record.start)?.today;
     $('#day-toggle span').textContent=record ? (record.kind==='birthday' && record.title===DAY_KINDS.birthday.title ? '生日' : record.title) : '选择内容';
-    $('#life-label').textContent=record?.title || '记录重要的日子'; $('#life-label').title=record?.title || ''; $('#day-toggle').title=record?.title || '选择记日内容'; $('#life-days').textContent=info ? info.days.toLocaleString('zh-CN') : '—';
-    $('#day-range').textContent=info ? `${record.mode==='down' ? '倒数' : '正数'} · ${record.end ? '固定区间' : '截至今天'}` : '';
-    $('#birthday-caption').textContent=birthdayToday ? '今天是你的生日，愿新的一岁自在明亮。' : info ? info.days===0 ? '今天，就是这个重要的日子。' : record.mode==='down' ? info.days>0 ? '心有所期，一天更近一天。' : '这段倒数已走过目标日。' : info.days<0 ? '还未到起始日期，期待那一天。' : '每一天，都值得好好度过。' : '添加日期，让重要的日子有迹可循。';
+    const copy=dayCopy(record,info,birthdayToday,chooseDayCopy);
+    $('#life-label').textContent=copy.label; $('#life-label').title=copy.label; $('#day-toggle').title=record?.title || '选择记日内容'; $('#life-days').textContent=info ? info.days.toLocaleString('zh-CN') : '—';
+    $('#birthday-caption').textContent=copy.caption;
     $('#birthday-toggle').firstChild.textContent=record ? record.start ? '编辑记录' : '填写生日' : '添加记日';
   }
   function moveDayIndicator() {
@@ -281,7 +341,7 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderDayRecord(); celebrateBirthday(); } });
   renderDayRecord(); document.dispatchEvent(new Event('qidian-birthday-change')); celebrateBirthday();
 
-  let location = normalizeLocation(read('weatherLocation', null)) || { name:'上海', latitude:31.23, longitude:121.47 }, weatherVersion = 0, searchVersion = 0, searchTimer, memoryOnly = false;
+  let location = normalizeLocation(read('weatherLocation', null)) || { name:'上海', latitude:31.23, longitude:121.47 }, weatherVersion = 0, searchVersion = 0, searchTimer, searchRequest, memoryOnly = false;
   function showWeather(data, at, cached = false) {
     const weather = normalizeWeather(data), [condition, icon] = weatherDescription(weather.code);
     $('#weather-temperature').textContent = weather.temperature + '°'; $('#weather-condition').textContent = condition; $('#weather-icon').setAttribute('href', '#i-' + icon);
@@ -314,50 +374,58 @@
   }
   function selectLocation(value) {
     const selected = normalizeLocation(value); if (!selected) return;
-    location = selected; clearTimeout(searchTimer); searchVersion++;
+    location = selected; cancelCityLookup();
     try { localStorage.setItem('yql.weatherLocation', JSON.stringify(selected)); memoryOnly = false; } catch { memoryOnly = true; }
     setDisclosure($('#weather-city-toggle'), $('#weather-picker'), false); $('#weather-city-toggle').focus(); loadWeather();
   }
-  const presetCities = [
-    ['北京',39.90,116.40],['上海',31.23,121.47],['广州',23.13,113.26],['深圳',22.54,114.06],
-    ['杭州',30.27,120.15],['成都',30.57,104.07],['武汉',30.59,114.31],['重庆',29.56,106.55]
-  ].map(([name,latitude,longitude]) => ({name,latitude,longitude}));
-  let cityOptions = [], cityActive = -1, composing = false;
-  function renderCities(cities, presets = false) {
-    cityOptions = cities; cityActive = -1; $('#weather-query').removeAttribute('aria-activedescendant');
-    $('#weather-cities').replaceChildren(); $('#weather-cities').classList.toggle('city-presets', presets);
-    cities.forEach((city, index) => {
-      const button = document.createElement('button'); button.type = 'button'; button.id = `weather-city-${index}`;
-      button.setAttribute('role','option'); button.setAttribute('aria-selected','false'); button.tabIndex = -1;
-      button.textContent = city.name; button.addEventListener('click', () => selectLocation(city)); $('#weather-cities').append(button);
+  const presetCities=CITY_INDEX.slice(0,8), cityCache=new Map();
+  let cityOptions=[], cityActive=-1, composing=false;
+  function cancelCityLookup() { clearTimeout(searchTimer); searchRequest?.abort(); searchRequest=null; searchVersion++; }
+  function renderCities(cities,presets=false,preserve=false) {
+    const activeName=preserve ? cityOptions[cityActive]?.name : null;
+    cityOptions=cities; cityActive=cities.findIndex(city=>city.name===activeName); $('#weather-query').removeAttribute('aria-activedescendant');
+    $('#weather-cities').replaceChildren(); $('#weather-cities').classList.toggle('city-presets',presets);
+    cities.forEach((city,index)=> {
+      const button=document.createElement('button'); button.type='button'; button.id=`weather-city-${index}`; button.setAttribute('role','option'); button.setAttribute('aria-selected',String(index===cityActive)); button.tabIndex=-1;
+      if (presets) button.textContent=city.title;
+      else { const name=document.createElement('strong'); name.textContent=city.title; const detail=document.createElement('small'); detail.textContent=city.detail; button.append(name,detail); }
+      button.addEventListener('click',()=>selectLocation(city)); $('#weather-cities').append(button);
     });
-    $('#weather-query').setAttribute('aria-expanded', String(cities.length > 0));
+    if (cityActive>=0) $('#weather-query').setAttribute('aria-activedescendant',`weather-city-${cityActive}`);
+    $('#weather-query').setAttribute('aria-expanded',String(cities.length>0));
   }
   function showCityPresets() {
-    clearTimeout(searchTimer); searchVersion++; $('#weather-query').value = '';
-    renderCities(presetCities, true); $('#weather-search-status').textContent = '常用城市 · 也可以输入名称搜索';
-    $('#weather-cities').setAttribute('aria-busy','false'); $('#weather-search').disabled = false;
+    cancelCityLookup(); $('#weather-query').value=''; renderCities(presetCities,true);
+    $('#weather-search-status').textContent='常用城市 · 支持中文、拼音和首字母'; $('#weather-cities').setAttribute('aria-busy','false');
   }
   async function searchCities() {
-    clearTimeout(searchTimer); const version = ++searchVersion, query = $('#weather-query').value.trim();
-    if (query.length < 2) { renderCities(presetCities, true); $('#weather-search-status').textContent = query ? '再输入一个字，或选择常用城市。' : '常用城市 · 也可以输入名称搜索'; return; }
-    $('#weather-cities').setAttribute('aria-busy','true'); $('#weather-search-status').textContent = '正在查找匹配的城市…';
-    renderCities([]);
+    cancelCityLookup(); const version=searchVersion, query=$('#weather-query').value.trim(), key=cityKey(query), local=localCityMatches(query);
+    if (!key) { renderCities(presetCities,true); $('#weather-search-status').textContent='常用城市 · 支持中文、拼音和首字母'; return; }
+    const cached=cityCache.get(key), exact=local.some(city=>[cityKey(city.title),...city.aliases].includes(key));
+    renderCities(cached || local,false,true); $('#weather-cities').setAttribute('aria-busy','false');
+    if (cached || exact || key.length<2) { $('#weather-search-status').textContent=(cached || local).length ? '选择城市查看天气 · ↑ ↓ 切换，回车确认' : '继续输入城市名称或拼音。'; return; }
+    $('#weather-cities').setAttribute('aria-busy',String(!local.length)); $('#weather-search-status').textContent=local.length ? '已找到常用城市，正在补充其他匹配…' : '正在查找匹配的城市…';
+    const controller=new AbortController(); searchRequest=controller; const timeout=setTimeout(()=>controller.abort(),5000);
     try {
-      const url = new URL('https://geocoding-api.open-meteo.com/v1/search'); url.search = new URLSearchParams({name:query, count:6, language:'zh', format:'json'});
-      const data = await fetchPublicJson(url.href); if (version !== searchVersion) return;
-      const cities = (Array.isArray(data.results) ? data.results : []).map(city => normalizeLocation({...city, name:[...new Set([city.name,city.admin1,city.country].filter(value => typeof value === 'string' && value.trim()))].join(' · ')})).filter(Boolean);
-      renderCities(cities); $('#weather-search-status').textContent = cities.length ? '选择城市查看天气 · ↑ ↓ 切换，回车确认' : '没有找到城市，试试完整名称或拼音。';
-    } catch { if (version === searchVersion) $('#weather-search-status').textContent = '城市联想暂不可用，可稍后重试或使用定位。'; }
-    finally { if (version === searchVersion) $('#weather-cities').setAttribute('aria-busy','false'); }
+      const url=new URL('https://geocoding-api.open-meteo.com/v1/search'); url.search=new URLSearchParams({name:query,count:30,language:'zh',format:'json'});
+      const response=await fetch(url.href,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer'}); if (!response.ok) throw new Error('城市搜索暂不可用');
+      const data=await response.json(); if (version!==searchVersion) return;
+      const cities=rankCityResults(query,local,data.results); if (cities.length) { cityCache.set(key,cities); if (cityCache.size>32) cityCache.delete(cityCache.keys().next().value); }
+      renderCities(cities,false,true); $('#weather-search-status').textContent=cities.length ? '选择城市查看天气 · ↑ ↓ 切换，回车确认' : '没有找到城市，试试完整名称、拼音或加上省份。';
+    } catch { if (version===searchVersion) $('#weather-search-status').textContent=local.length ? '可先选择已匹配的城市；更多结果暂不可用。' : '城市搜索暂不可用，可稍后重试或使用定位。'; }
+    finally { clearTimeout(timeout); if (searchRequest===controller) searchRequest=null; if (version===searchVersion) $('#weather-cities').setAttribute('aria-busy','false'); }
   }
-  $('#weather-query').addEventListener('compositionstart', () => { composing = true; clearTimeout(searchTimer); searchVersion++; });
-  $('#weather-query').addEventListener('compositionend', () => { composing = false; queueCitySearch(); });
   function queueCitySearch() {
-    clearTimeout(searchTimer); searchVersion++; renderCities([]); $('#weather-cities').setAttribute('aria-busy','false');
-    if (!composing) searchTimer = setTimeout(searchCities, 280);
+    cancelCityLookup(); if (composing) { renderCities([]); return; }
+    const query=$('#weather-query').value.trim(), key=cityKey(query), local=localCityMatches(query);
+    renderCities(key ? cityCache.get(key) || local : presetCities,!key); $('#weather-cities').setAttribute('aria-busy','false');
+    $('#weather-search-status').textContent=key ? local.length ? '已匹配常用城市，可直接选择。' : '正在匹配城市…' : '常用城市 · 支持中文、拼音和首字母';
+    if (key) searchTimer=setTimeout(searchCities,180);
   }
-  $('#weather-query').addEventListener('input', queueCitySearch);
+  $('#weather-picker').addEventListener('toggle',event=> { if (event.newState==='closed') cancelCityLookup(); });
+  $('#weather-query').addEventListener('compositionstart',()=> { composing=true; cancelCityLookup(); renderCities([]); });
+  $('#weather-query').addEventListener('compositionend',()=> { composing=false; queueCitySearch(); });
+  $('#weather-query').addEventListener('input',queueCitySearch);
   $('#weather-query').addEventListener('keydown', event => {
     if (composing || event.isComposing) return;
     if (['ArrowDown','ArrowUp'].includes(event.key) && cityOptions.length) {
